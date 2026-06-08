@@ -3,15 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Danger Mines - Operación Global</title>
-    
-    <!-- Tailwind CSS -->
+    <title>Danger Mines - Global Elite</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
-    
-    <!-- HTML2Canvas para capturas -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
     <style>
@@ -19,1483 +13,152 @@
         .scrollbar-hide::-webkit-scrollbar { display: none; }
         .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
         body { -webkit-tap-highlight-color: transparent; }
-        input { font-size: 16px !important; } /* Prevenir zoom en iOS */
-        
-        /* Animaciones personalizadas */
-        @keyframes tactical-pulse {
-            0%, 100% { box-shadow: 0 0 10px rgba(220, 38, 38, 0.2); }
-            50% { box-shadow: 0 0 25px rgba(220, 38, 38, 0.6); }
-        }
+        input { font-size: 16px !important; }
+        @keyframes tactical-pulse { 0%, 100% { box-shadow: 0 0 10px rgba(220, 38, 38, 0.2); } 50% { box-shadow: 0 0 25px rgba(220, 38, 38, 0.6); } }
         .tactical-glow { animation: tactical-pulse 2s infinite; }
-        @keyframes success-pulse {
-            0%, 100% { box-shadow: 0 0 10px rgba(16, 185, 129, 0.2); }
-            50% { box-shadow: 0 0 25px rgba(16, 185, 129, 0.6); }
-        }
-        .success-glow { animation: success-pulse 2s infinite; }
-        
-        @keyframes sync-pulse {
-            0% { transform: scale(1); opacity: 0.5; }
-            100% { transform: scale(1.4); opacity: 0; }
-        }
-        .sync-ring { animation: sync-pulse 1s cubic-bezier(0, 0, 0.2, 1) infinite; }
-        
         .cell { transition: all 0.15s ease-in-out; }
         .cell.revealed { background-color: #171717; border-color: #262626; box-shadow: inset 0 0 6px rgba(0,0,0,0.6); }
-        .cell:active:not(.revealed) { transform: scale(0.92); }
     </style>
 </head>
-<body class="bg-neutral-950 text-neutral-200 font-sans selection:bg-red-900 overflow-x-hidden min-h-screen flex flex-col">
+<body class="bg-neutral-950 text-neutral-200 font-sans min-h-screen flex flex-col">
 
     <div id="notification-container" class="fixed top-16 left-1/2 transform -translate-x-1/2 z-[100] hidden">
-        <div id="notification-msg" class="bg-white text-black px-5 py-2.5 rounded-full font-black text-[10px] shadow-[0_0_20px_rgba(255,255,255,0.3)] animate-bounce tracking-widest text-center uppercase whitespace-nowrap">
-            Mensaje
-        </div>
+        <div id="notification-msg" class="bg-white text-black px-5 py-2.5 rounded-full font-black text-[10px] animate-bounce tracking-widest text-center uppercase whitespace-nowrap"></div>
     </div>
 
-    <!-- PANTALLA DE CARGA -->
     <div id="loading-screen" class="min-h-screen bg-neutral-950 flex flex-col justify-center items-center text-red-600 gap-4 fixed inset-0 z-50">
         <i data-lucide="bomb" class="w-16 h-16 animate-pulse"></i>
-        <span class="font-mono text-xs tracking-widest uppercase">Estableciendo Enlace Global...</span>
+        <span class="font-mono text-xs tracking-widest uppercase">Sincronizando con Servidor Global...</span>
     </div>
 
-    <div id="auth-screen" class="min-h-screen bg-neutral-950 text-neutral-200 flex flex-col items-center justify-center p-4 hidden w-full">
-        <div class="w-full max-w-md bg-neutral-900 border border-neutral-800 rounded-3xl p-8 shadow-[0_0_60px_rgba(220,38,38,0.15)] relative overflow-hidden">
-            <div class="absolute -top-24 -right-24 w-56 h-56 bg-red-600 rounded-full blur-[120px] opacity-20 pointer-events-none"></div>
-            
-            <div class="text-center mb-10 relative z-10">
-                <div class="inline-block p-4 bg-neutral-950 rounded-2xl border border-neutral-800 shadow-inner mb-6 relative">
-                    <div class="absolute inset-0 border border-red-500/30 rounded-2xl animate-ping opacity-20"></div>
-                    <i data-lucide="bomb" class="w-12 h-12 text-red-500 drop-shadow-[0_0_15px_rgba(239,68,68,0.6)]"></i>
-                </div>
-                <h1 class="text-4xl font-black italic tracking-widest uppercase text-transparent bg-clip-text bg-gradient-to-r from-red-500 via-red-400 to-white">
-                    Danger <span class="text-red-600 drop-shadow-[0_0_10px_rgba(220,38,38,0.5)]">Mines</span>
-                </h1>
-                <p class="text-neutral-500 text-[10px] mt-2 uppercase tracking-[0.3em] font-black">Operación de Élite Global</p>
-            </div>
-
-            <form id="auth-form" class="space-y-4 relative z-10">
-                <div class="space-y-1">
-                   <label class="text-[10px] font-black uppercase text-neutral-500 tracking-wider">Identificador (Usuario)</label>
-                   <input type="text" id="auth-username" class="w-full bg-neutral-950/50 border border-neutral-800 rounded-xl py-3.5 px-4 text-white font-bold outline-none focus:border-red-500 transition-all placeholder:text-neutral-700" placeholder="Ej: Drake Cora" required />
-                </div>
-                <div class="space-y-1 relative">
-                   <label class="text-[10px] font-black uppercase text-neutral-500 tracking-wider">Código de Seguridad (Contraseña)</label>
-                   <div class="relative">
-                     <input type="password" id="auth-password" class="w-full bg-neutral-950/50 border border-neutral-800 rounded-xl py-3.5 px-4 text-white font-bold outline-none focus:border-red-500 transition-all placeholder:text-neutral-700 pr-12" placeholder="••••••••" required />
-                     <button type="button" id="toggle-password" class="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-white transition-colors">
-                       <i data-lucide="eye" id="eye-icon" class="w-[18px] h-[18px]"></i>
-                     </button>
-                   </div>
-                </div>
-
-                <div class="flex items-center gap-2 pt-2 cursor-pointer select-none" id="toggle-remember">
-                  <div id="remember-box" class="w-4 h-4 rounded border flex items-center justify-center transition-colors bg-red-600 border-red-500 text-white">
-                    <i data-lucide="check" id="remember-check" class="w-3 h-3 stroke-[4px]"></i>
-                  </div>
-                  <span class="text-[10px] font-black uppercase tracking-wider text-neutral-400">Recordar Sesión Permanente</span>
-                </div>
-
-                <div id="auth-warning" class="hidden mt-2 p-3 bg-yellow-900/20 border border-yellow-700/50 rounded-xl text-[10px] text-yellow-500 font-bold uppercase tracking-wider text-center">
-                    <i data-lucide="wifi-off" class="w-4 h-4 inline-block mb-1"></i><br>
-                    Modo Entrenamiento Local<br>
-                    <span class="text-[9px] text-neutral-400 mt-1 block">Usa "Drake Cora" y clave "123" para las pruebas.</span>
-                </div>
-
-                <button type="submit" id="auth-submit-btn" class="w-full bg-red-600 hover:bg-red-500 text-white font-black uppercase tracking-widest py-4 rounded-xl shadow-[0_0_20px_rgba(220,38,38,0.3)] transition-all flex justify-center items-center gap-2 mt-8 text-sm active:scale-95">
-                  <i data-lucide="log-in" id="auth-btn-icon" class="w-[18px] h-[18px]"></i> <span id="auth-btn-text">Iniciar Secuencia</span>
-                </button>
+    <div id="auth-screen" class="min-h-screen bg-neutral-950 flex flex-col items-center justify-center p-4 hidden">
+        <div class="w-full max-w-md bg-neutral-900 border border-neutral-800 rounded-3xl p-8 shadow-2xl relative">
+            <h1 class="text-4xl font-black italic text-center text-white mb-8">DANGER <span class="text-red-600">MINES</span></h1>
+            <form id="auth-form" class="space-y-4">
+                <input type="text" id="auth-username" class="w-full bg-neutral-950 border border-neutral-800 rounded-xl py-3 px-4 text-white font-bold" placeholder="Tu Nombre de Agente" required />
+                <input type="password" id="auth-password" class="w-full bg-neutral-950 border border-neutral-800 rounded-xl py-3 px-4 text-white font-bold" placeholder="Código de Seguridad" required />
+                <button type="submit" class="w-full bg-red-600 py-4 rounded-xl font-black text-white hover:bg-red-500 transition-all">ACCEDER A LA RED GLOBAL</button>
             </form>
-
-            <button id="auth-switch-btn" class="w-full text-center mt-6 text-[11px] text-neutral-400 hover:text-red-400 transition-colors uppercase font-black tracking-wider underline underline-offset-4 relative z-10">
-                ¿Nuevo Recluta? Iniciar Enlace
-            </button>
         </div>
     </div>
 
-    <div id="app-screen" class="hidden flex-col min-h-screen pb-24 w-full">
-        <header class="sticky top-0 z-40 bg-neutral-950/95 backdrop-blur-md border-b border-neutral-900 px-4 py-3 shadow-2xl flex justify-between items-center w-full">
-            <div class="flex items-center gap-3">
-              <button id="btn-logout" class="text-neutral-500 hover:text-red-500 transition-colors" title="Cerrar Sesión"><i data-lucide="power" class="w-[18px] h-[18px]"></i></button>
-              <div class="flex flex-col">
-                <h1 class="text-[13px] font-black italic tracking-widest uppercase text-white leading-none">Danger <span class="text-red-600">Mines</span></h1>
-                <span class="text-[9px] text-neutral-500 font-black uppercase tracking-[0.2em] mt-0.5">Agente: <span id="header-username" class="text-red-500">---</span></span>
-              </div>
+    <div id="app-screen" class="hidden flex-col min-h-screen w-full">
+        <header class="bg-neutral-950 border-b border-neutral-900 p-4 flex justify-between items-center">
+            <div>
+                <h1 class="font-black text-white italic">DANGER <span class="text-red-600">MINES</span></h1>
+                <span class="text-[10px] text-neutral-500 font-bold uppercase">Agente: <span id="header-username">---</span></span>
             </div>
-            <div class="flex items-center gap-2">
-              <span id="badge-cloud" class="hidden text-[8px] bg-emerald-600/20 text-emerald-500 border border-emerald-500/50 px-1.5 py-0.5 rounded uppercase font-black tracking-wider shadow-[0_0_10px_rgba(16,185,129,0.2)]">☁️ Servidor Global</span>
-              <span id="badge-local" class="hidden text-[8px] bg-yellow-600/20 text-yellow-500 px-1.5 py-0.5 rounded uppercase font-black tracking-wider">Local</span>
-              <button id="btn-copy-link" class="p-1.5 rounded-lg bg-neutral-900 border border-neutral-800 text-neutral-400 hover:text-white transition-colors" title="Copiar Enlace de Juego">
-                <i data-lucide="share-2" class="w-3.5 h-3.5"></i>
-              </button>
-              <button id="btn-mute" class="p-1.5 rounded-lg bg-neutral-900 border border-neutral-800 text-neutral-400 hover:text-white transition-colors">
-                <i data-lucide="volume-2" id="mute-icon" class="w-3.5 h-3.5"></i>
-              </button>
-              <div id="header-balance-container" class="flex items-center gap-1.5 bg-neutral-900 px-2.5 py-1.5 rounded-lg border border-neutral-800 transition-colors">
-                <i data-lucide="star" class="w-3 h-3 text-yellow-500 fill-yellow-500"></i>
-                <span id="header-balance" class="font-black text-[11px] transition-all text-yellow-400">0 PTS</span>
-              </div>
-            </div>
+            <div class="text-yellow-500 font-black text-sm" id="header-balance">0 PTS</div>
         </header>
-
-        <main class="flex-1 p-4 flex flex-col items-center w-full">
-            <div id="tab-game" class="flex-1 flex flex-col w-full max-w-2xl">
-                
-                <div class="mb-3 w-full flex flex-wrap items-center justify-between gap-2 px-3 py-2 bg-neutral-900/60 border border-neutral-800/80 rounded-xl text-xs">
-                  <div class="flex items-center gap-2 flex-wrap">
-                    <span class="text-[9px] font-black uppercase text-neutral-500 tracking-wider flex items-center gap-1.5">
-                      <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Servidores Activos:
-                    </span>
-                    <div id="active-agents-container" class="flex flex-wrap gap-1.5 text-[10px] font-bold">
-                      <span class="text-neutral-600 italic">Conectando canales...</span>
-                    </div>
-                  </div>
-                  <!-- Botón Forzar Sincronización Global -->
-                  <button id="btn-force-sync" class="bg-red-950/60 hover:bg-red-900 border border-red-950/80 hover:border-red-500 text-red-400 hover:text-white px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider flex items-center gap-1.5 transition-all relative overflow-hidden">
-                    <span class="absolute inset-0 bg-red-500/20 sync-ring rounded-lg pointer-events-none"></span>
-                    <i data-lucide="refresh-cw" class="w-3 h-3 animate-spin"></i> Pulso de Red
-                  </button>
-                </div>
-
-                <div id="tactical-header-card" class="bg-neutral-900 border border-neutral-800 rounded-2xl p-4 mb-4 shadow-xl relative overflow-hidden transition-all">
-                  <div class="absolute right-0 top-0 w-32 h-32 bg-red-500/5 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
-                  <div class="flex justify-between items-center mb-4 relative z-10">
-                    <div class="flex flex-col gap-1">
-                      <div class="flex items-center gap-2 font-black uppercase tracking-wider text-[12px] text-red-500">
-                        <i data-lucide="shield-alert" class="w-4 h-4"></i>
-                        <span id="game-level">Nivel 1</span>
-                      </div>
-                      <span class="text-[8px] text-neutral-500 uppercase font-black tracking-widest">Operación Individual</span>
-                    </div>
-                    <div class="flex bg-neutral-950 border border-neutral-800 rounded-lg overflow-hidden font-mono text-sm">
-                       <div class="flex items-center gap-1.5 px-3 py-1.5 bg-neutral-900 border-r border-neutral-800 text-red-400">
-                          <i data-lucide="bomb" class="w-3.5 h-3.5"></i> <span id="game-mines-left">15</span>
-                       </div>
-                       <div id="game-session-points" class="flex items-center gap-1.5 px-3 py-1.5 border-r border-neutral-800 font-black text-neutral-500">
-                          +0
-                       </div>
-                       <div class="flex items-center gap-1.5 px-3 py-1.5 text-neutral-400">
-                          <i data-lucide="timer" id="game-timer-icon" class="w-3.5 h-3.5"></i> <span id="game-time">0</span>
-                       </div>
-                    </div>
-                  </div>
-    
-                  <div id="game-controls-idle" class="relative z-10">
-                      <button id="btn-start-game" class="w-full text-white font-black uppercase tracking-widest py-3.5 rounded-xl shadow-lg transition-all flex justify-center items-center gap-2 text-xs bg-red-600 hover:brightness-110 active:scale-[0.98]">
-                        <i data-lucide="play" class="w-4 h-4 fill-current"></i> Iniciar Despliegue
-                      </button>
-                  </div>
-
-                  <div id="game-controls-playing" class="hidden gap-2 relative z-10">
-                    <button id="btn-abort" class="w-1/3 bg-neutral-950 text-red-500 border border-red-900/50 py-3 rounded-xl font-black text-[10px] tracking-widest uppercase hover:bg-red-950/50 transition-colors active:scale-[0.98]">
-                      Abortar
-                    </button>
-                    <div class="w-2/3 flex gap-1.5">
-                      <button id="btn-mode-dig" class="flex-1 rounded-xl font-black text-[10px] uppercase tracking-wider flex justify-center items-center gap-1.5 transition-all bg-red-600 text-white shadow-inner py-3 border border-red-500">
-                        <i data-lucide="target" class="w-3.5 h-3.5"></i> Cavar
-                      </button>
-                      <button id="btn-mode-flag" class="flex-1 rounded-xl font-black text-[10px] uppercase tracking-wider flex justify-center items-center gap-1.5 transition-all bg-neutral-950 text-neutral-500 border border-neutral-800 py-3">
-                        <i data-lucide="flag" class="w-3.5 h-3.5"></i> Bandera
-                      </button>
-                    </div>
-                  </div>
-
-                  <div id="game-controls-ended" class="hidden relative z-10">
-                      <button id="btn-next-try" class="w-full bg-neutral-950 hover:bg-neutral-800 border border-neutral-700 text-white font-black uppercase tracking-widest py-3.5 rounded-xl transition-all flex justify-center items-center gap-2 text-xs active:scale-[0.98]">
-                        <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Siguiente Intento
-                      </button>
-                  </div>
-                </div>
-    
-                <div id="capture-zone" class="relative p-2 rounded-2xl bg-neutral-950 border border-neutral-800 shadow-2xl flex-1 flex flex-col min-h-[400px] overflow-hidden select-none">
-                  <div class="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:14px_14px] pointer-events-none"></div>
-    
-                  <div id="result-overlay" class="hidden absolute inset-0 z-30 flex flex-col items-center justify-center bg-neutral-950/90 backdrop-blur-sm rounded-2xl p-4 text-center">
-                    <div class="transform animate-[bounce_0.5s_ease-out] mb-6">
-                      <div id="result-icon-container" class="relative flex justify-center mb-4"></div>
-                      <h2 id="result-title" class="text-2xl font-black uppercase tracking-widest text-white">Resultado</h2>
-                      <p id="result-points" class="font-black text-xl mt-1 bg-neutral-900 inline-block px-4 py-1 rounded-full border text-white border-neutral-900/50">0 PTS</p>
-                      <p id="result-detail" class="text-xs mt-2 font-black tracking-widest uppercase text-neutral-400"></p>
-                    </div>
-                    <button id="btn-share" class="bg-white hover:bg-neutral-200 text-black font-black uppercase text-[10px] tracking-[0.2em] py-3 px-8 rounded-full flex items-center gap-2 shadow-[0_0_20px_rgba(255,255,255,0.4)] transition-all active:scale-95 mt-4">
-                      <i data-lucide="share-2" class="w-4 h-4"></i> Capturar Expediente
-                    </button>
-                  </div>
-    
-                  <div class="flex-1 w-full h-full p-1 relative z-20 overflow-auto scrollbar-hide flex items-center justify-center">
-                    <div id="mines-grid" class="grid gap-[2px] bg-neutral-900 p-1.5 rounded-xl border border-neutral-800 shadow-inner inline-grid max-w-full"></div>
-                    <div id="mines-standby" class="text-neutral-600/50 text-center flex flex-col items-center gap-3">
-                        <i data-lucide="bomb" class="w-12 h-12 mx-auto animate-pulse text-neutral-800"></i>
-                        <p class="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-700">En Espera de Operación Individual</p>
-                     </div>
-                  </div>
-                  
-                  <div id="capture-watermark" class="hidden absolute bottom-4 left-0 right-0 text-center z-50">
-                    <p class="font-black italic uppercase tracking-widest text-[10px] bg-neutral-950/95 py-2.5 px-6 border border-neutral-800 rounded-full inline-flex items-center gap-2 shadow-2xl text-red-500">
-                      <i data-lucide="shield-alert" class="w-3 h-3"></i> Agente: <span id="wm-username"></span> | Nivel: <span id="wm-level"></span>
-                    </p>
-                  </div>
-                </div>
+        
+        <main class="flex-1 p-4 flex flex-col items-center">
+            <div id="tab-game" class="w-full max-w-lg">
+                <div id="mines-grid" class="grid gap-1 bg-neutral-900 p-2 rounded-xl"></div>
+                <button id="btn-start-game" class="mt-4 w-full bg-red-600 py-3 rounded-xl font-black">INICIAR OPERACIÓN</button>
             </div>
-
-            <div id="tab-history" class="hidden space-y-4 w-full max-w-md mx-auto">
-                <h2 class="text-sm font-black flex items-center gap-2 uppercase tracking-widest border-l-4 border-neutral-600 pl-3 mb-6 text-neutral-300">
-                  <i data-lucide="history" class="w-4 h-4 text-neutral-500"></i> Registros de la Red Global
-                </h2>
-                <div id="history-container" class="space-y-3"></div>
+            <div id="tab-ranking" class="hidden w-full max-w-lg">
+                <div id="ranking-container" class="space-y-2"></div>
             </div>
-
-            <div id="tab-ranking" class="hidden space-y-4 w-full max-w-md mx-auto pb-6">
-                <div class="bg-gradient-to-b from-red-950/80 to-neutral-950 border-2 border-red-500/40 rounded-3xl p-8 mb-8 shadow-[0_10px_40px_rgba(220,38,38,0.2)] flex flex-col items-center justify-center text-center relative overflow-hidden group">
-                  <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-red-500/10 via-transparent to-transparent animate-pulse pointer-events-none"></div>
-                  <div class="relative">
-                     <i data-lucide="coins" class="w-14 h-14 text-red-500 mb-3 drop-shadow-[0_0_20px_rgba(239,68,68,0.8)] transform group-hover:scale-110 transition-transform duration-500"></i>
-                     <div class="absolute inset-0 bg-red-500 blur-xl opacity-20 group-hover:opacity-40 transition-opacity rounded-full"></div>
-                  </div>
-                  <p class="text-[10px] font-black text-red-500 uppercase tracking-[0.5em] mb-2 drop-shadow-md">Pozo de Élite</p>
-                  <h2 class="text-5xl sm:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-b from-white via-red-100 to-red-500 drop-shadow-[0_0_15px_rgba(220,38,38,0.6)] mb-3 leading-none tracking-tighter">
-                    <span id="prize-pool-display">1.5T</span> <span class="text-2xl sm:text-3xl text-red-500 tracking-normal">FC</span>
-                  </h2>
-                  
-                  <div id="admin-pool-edit" class="hidden mb-4 relative z-10 w-full max-w-[240px]">
-                      <button id="btn-edit-pool" class="text-[9px] w-full bg-red-950/50 border border-red-500/30 text-red-400 py-2 rounded-full uppercase tracking-widest font-black hover:bg-red-900/80 hover:text-white hover:border-red-500 transition-all flex items-center justify-center gap-1.5 shadow-[0_0_15px_rgba(220,38,38,0.2)]">
-                        <i data-lucide="edit-3" class="w-3 h-3"></i> Modificar Pozo Global
-                      </button>
-                      <div id="form-edit-pool" class="hidden flex w-full gap-2 bg-neutral-950/80 p-1 rounded-lg border border-red-500/50 mt-2">
-                        <input type="text" id="input-pool" class="flex-1 bg-transparent text-white text-xs text-center font-bold outline-none placeholder:text-neutral-600" placeholder="Ej: 5.0T">
-                        <button id="btn-save-pool" class="bg-red-600 text-white p-1.5 rounded hover:bg-red-500 transition-colors"><i data-lucide="check" class="w-3.5 h-3.5"></i></button>
-                        <button id="btn-cancel-pool" class="bg-neutral-800 text-white p-1.5 rounded hover:bg-neutral-700 transition-colors"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>
-                      </div>
-                  </div>
-                  
-                  <div class="bg-red-950/90 px-5 py-2.5 rounded-full border border-red-500/30 backdrop-blur-md shadow-[inset_0_0_10px_rgba(239,68,68,0.1)]">
-                    <p class="text-[9px] font-black text-red-200 uppercase tracking-[0.2em] flex items-center gap-2">
-                      <i data-lucide="trophy" class="w-3 h-3 text-yellow-400"></i> Top 10 se reparten el botín
-                    </p>
-                  </div>
-                </div>
-    
-                <h3 class="text-[11px] font-black uppercase tracking-widest text-neutral-500 mb-3 pl-3 border-l-2 border-neutral-700 flex items-center gap-2">
-                  <i data-lucide="crown" class="w-3.5 h-3.5"></i> Clasificación Global
-                </h3>
-    
-                <div id="ranking-container" class="bg-neutral-900 border border-neutral-800 rounded-2xl overflow-hidden shadow-2xl"></div>
-            </div>
-
-            <div id="tab-panel" class="hidden space-y-6 w-full max-w-lg mx-auto pb-12">
-                <h2 class="text-sm font-black flex items-center gap-2 uppercase tracking-widest border-l-4 border-red-600 pl-3 mb-6 text-white">
-                  <i data-lucide="shield-alert" class="w-4 h-4 text-red-500"></i> Centro de Mando Supremo
-                </h2>
-    
-                <div class="bg-neutral-900 border border-neutral-800 rounded-2xl p-4 shadow-xl">
-                   <h3 class="text-[11px] font-black uppercase tracking-wider text-neutral-400 mb-3 flex items-center gap-1.5">
-                      <i data-lucide="message-square" class="w-3.5 h-3.5 text-red-500"></i> Notificaciones a Telegram
-                   </h3>
-                   <div id="view-telegram-id" class="flex justify-between items-center bg-neutral-950 border border-neutral-800/60 rounded-xl p-3">
-                       <div>
-                         <p class="text-[9px] text-neutral-500 uppercase font-bold">Chat ID Destino</p>
-                         <p id="display-telegram-id" class="text-xs font-mono text-neutral-300 font-bold mt-0.5">Sin Configurar</p>
-                       </div>
-                       <button id="btn-edit-tg" class="bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 p-2 rounded-lg text-red-500 hover:text-white transition-colors">
-                         <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
-                       </button>
-                   </div>
-                   <div id="form-telegram-id" class="hidden flex gap-2 mt-2">
-                       <input type="text" id="input-tg" class="flex-1 bg-neutral-950 border border-neutral-800 rounded-lg px-3 py-2 text-xs font-mono text-white outline-none focus:border-red-500" placeholder="Ej: -100123456789" />
-                       <button id="btn-save-tg" class="bg-red-600 p-2 rounded-lg text-white font-black hover:bg-red-500"><i data-lucide="check" class="w-3.5 h-3.5"></i></button>
-                       <button id="btn-cancel-tg" class="bg-neutral-800 p-2 rounded-lg text-white font-black hover:bg-neutral-700"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>
-                   </div>
-                </div>
-    
-                <div class="bg-neutral-900 border border-neutral-800 rounded-2xl p-4 shadow-xl">
-                   <h3 class="text-[11px] font-black uppercase tracking-wider text-neutral-400 mb-4">Registro Completo de Agentes</h3>
-                   <div id="admin-users-list" class="space-y-3 max-h-[400px] overflow-y-auto pr-1"></div>
-                </div>
-            </div>
-
         </main>
 
-        <nav class="fixed bottom-0 w-full bg-neutral-950/90 backdrop-blur-md border-t border-neutral-900 flex justify-around items-center py-2.5 pb-safe z-40 shadow-[0_-5px_20px_rgba(0,0,0,0.5)]">
-            <button data-tab="game" class="nav-btn flex flex-col items-center p-2 w-20 transition-colors text-red-500">
-              <i data-lucide="target" class="w-5 h-5 icon-active"></i>
-              <span class="text-[8px] font-black mt-1.5 uppercase tracking-widest">Operación</span>
-            </button>
-            <button data-tab="ranking" class="nav-btn flex flex-col items-center p-2 w-20 transition-colors text-neutral-600 hover:text-neutral-400">
-              <i data-lucide="crown" class="w-5 h-5 icon-active"></i>
-              <span class="text-[8px] font-black mt-1.5 uppercase tracking-widest">Ranking</span>
-            </button>
-            <button data-tab="panel" id="nav-panel" class="hidden nav-btn flex flex-col items-center p-2 w-20 transition-colors text-neutral-600 hover:text-neutral-400">
-              <i data-lucide="shield-alert" class="w-5 h-5 icon-active"></i>
-              <span class="text-[8px] font-black mt-1.5 uppercase tracking-widest">Panel</span>
-            </button>
-            <button data-tab="history" class="nav-btn flex flex-col items-center p-2 w-20 transition-colors text-neutral-600 hover:text-neutral-400">
-              <i data-lucide="history" class="w-5 h-5 icon-active"></i>
-              <span class="text-[8px] font-black mt-1.5 uppercase tracking-widest">Registros</span>
-            </button>
+        <nav class="fixed bottom-0 w-full bg-neutral-950 border-t border-neutral-900 flex justify-around p-4">
+            <button data-tab="game" class="nav-btn text-red-500"><i data-lucide="target"></i></button>
+            <button data-tab="ranking" class="nav-btn text-neutral-600"><i data-lucide="crown"></i></button>
         </nav>
     </div>
 
-    <div id="modal-tactical-confirm" class="hidden fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-fade-in">
-        <div class="bg-neutral-900 border border-red-900/40 w-full max-w-sm rounded-2xl p-6 shadow-2xl relative text-center">
-            <div class="inline-block p-3 bg-red-950/50 rounded-full border border-red-900/50 mb-4 text-red-500">
-                <i data-lucide="shield-alert" class="w-8 h-8 mx-auto"></i>
-            </div>
-            <h3 class="text-sm font-black text-white uppercase tracking-widest mb-2">¿Abortar Operación?</h3>
-            <p class="text-xs text-neutral-400 mb-6">Esta acción reiniciará tu progreso táctico de la ronda actual de manera irrevocable.</p>
-            <div class="flex gap-2.5">
-                <button id="btn-confirm-no" class="flex-1 py-2.5 rounded-xl bg-neutral-950 border border-neutral-800 text-neutral-400 hover:text-white text-xs font-black uppercase tracking-wider transition-colors">Volver</button>
-                <button id="btn-confirm-yes" class="flex-1 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-black uppercase tracking-wider transition-colors">Abortar</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="modal-edit-user" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-        <div class="bg-neutral-900 border border-neutral-800 w-full max-w-md rounded-2xl p-6 shadow-2xl relative">
-             <h3 class="text-sm font-black text-white uppercase tracking-widest mb-4 flex items-center gap-2">
-                <i data-lucide="shield-alert" class="w-4 h-4 text-red-500"></i> Modificar Perfil del Agente
-             </h3>
-             <div class="space-y-4">
-                <input type="hidden" id="edit-orig-user">
-                <div>
-                  <label class="text-[10px] uppercase tracking-wider font-black text-neutral-500 block mb-1">Nombre del Operativo (Alias)</label>
-                  <input type="text" id="edit-username" class="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2 text-xs font-bold text-white outline-none" />
-                </div>
-                <div>
-                  <label class="text-[10px] uppercase tracking-wider font-black text-neutral-500 block mb-1">Código de Seguridad (Contraseña)</label>
-                  <input type="text" id="edit-password" class="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2 text-xs font-bold text-white outline-none" />
-                </div>
-                <div class="grid grid-cols-2 gap-4">
-                  <div>
-                    <label class="text-[10px] uppercase tracking-wider font-black text-neutral-500 block mb-1">Nivel Táctico</label>
-                    <input type="number" id="edit-level" class="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2 text-xs font-bold text-white outline-none" />
-                  </div>
-                  <div>
-                    <label class="text-[10px] uppercase tracking-wider font-black text-neutral-500 block mb-1">Puntos (Balance)</label>
-                    <input type="number" id="edit-balance" class="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2 text-xs font-bold text-white outline-none" />
-                  </div>
-                </div>
-             </div>
-             <div class="flex gap-2.5 mt-6">
-                <button id="btn-cancel-edit-user" class="flex-1 py-2.5 rounded-xl bg-neutral-950 border border-neutral-800 text-neutral-500 hover:text-white text-xs font-black uppercase tracking-wider">Cancelar</button>
-                <button id="btn-save-edit-user" class="flex-1 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-black uppercase tracking-wider">Guardar</button>
-             </div>
-        </div>
-    </div>
-
-    <!-- SCRIPT DE COMPLEMENTO COMPLETO -->
     <script type="module">
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
-        import { getFirestore, collection, doc, setDoc, updateDoc, onSnapshot, deleteDoc } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        lucide.createIcons();
+        // Firebase Setup
+        const firebaseConfig = {
+            apiKey: "AIzaSyArsLcBp2WUKk7WiAYh2I7tTvdAzcs1My0",
+            authDomain: "danger-mines.firebaseapp.com",
+            projectId: "danger-mines",
+            storageBucket: "danger-mines.firebasestorage.app",
+            messagingSenderId: "722493966122",
+            appId: "1:722493966122:web:283963d471c46300cd8053"
+        };
 
-        // Configuración Firebase Inyectada
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'danger-mines-global-elite';
-        let app = null, auth = null, db = null, useFirebase = false;
-        let firebaseUser = null;
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = 'danger-mines-global-elite';
 
-        // CANAL DE COMUNICACIÓN LOCAL INTER-PESTAÑAS (Para forzar sincronización instantánea sin nube)
-        const localSyncChannel = new BroadcastChannel('danger_mines_sync');
-
-        // ESTADO GLOBAL COMPARTIDO
-        const ADMIN_USER = 'drake cora';
-        let isLoginMode = true;
-        let rememberMe = true;
+        // Globals
         let currentUser = null;
         let users = [];
-        let historyLogs = [];
-        let adminSettings = { globalPool: '1.5T', telegramId: '' };
-        let isMuted = false;
 
-        // ESTADO JUEGO INDEPENDIENTE
-        let board = [];
-        let gameConfig = { rows: 10, cols: 10, mines: 15 };
-        let gameState = 'idle'; // idle, playing, won, lost
-        let timerInterval = null;
-        let timeElapsed = 0;
-        let currentMode = 'dig'; // dig, flag
-        let flagsPlaced = 0;
-        let sessionPoints = 0;
-        const PTS_WIN_BONUS = 50;
-        const PTS_PER_CELL = 2;
+        // UI Helpers
+        lucide.createIcons();
+        const getPublicRef = (col) => collection(db, 'artifacts', appId, 'public', 'data', col);
 
-        // Sonidos
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        function playTone(freq, type, duration) {
-            if (isMuted || !audioCtx) return;
-            try {
-                if (audioCtx.state === 'suspended') {
-                    audioCtx.resume();
-                }
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                osc.type = type;
-                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-                osc.start();
-                osc.stop(audioCtx.currentTime + duration);
-            } catch (e) {
-                console.warn("Audio Context Error: ", e);
-            }
-        }
-
-        const sounds = {
-            click: () => playTone(600, 'sine', 0.1),
-            flag: () => playTone(800, 'square', 0.1),
-            bomb: () => playTone(100, 'sawtooth', 0.5),
-            win: () => { playTone(400, 'sine', 0.1); setTimeout(()=>playTone(600, 'sine', 0.2), 100); },
-            alert: () => playTone(300, 'square', 0.2)
-        };
-
-        // NOTIFICACIONES FLOTANTES
-        function showNotification(text) {
-            const container = document.getElementById('notification-container');
-            const msg = document.getElementById('notification-msg');
-            msg.innerText = text;
-            container.classList.remove('hidden');
-            sounds.alert();
-            setTimeout(() => {
-                container.classList.add('hidden');
-            }, 3000);
-        }
-
-        // TELEGRAM NOTIFICACIÓN
-        async function notifyTelegram(message) {
-            if (!adminSettings.telegramId) return;
-            const botToken = "7039201994:AAFGp0qZ-K67N6Wf-kHk-pE6x67j_g2W-6Y"; 
-            const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
-            try {
-                await fetch(url, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        chat_id: adminSettings.telegramId,
-                        text: `🚨 [DANGER MINES] 🚨\n\n${message}`,
-                        parse_mode: 'HTML'
-                    })
-                });
-            } catch (error) {
-                console.error("Telegram notify failed: ", error);
-            }
-        }
-
-        // INICIALIZACIÓN DE FIREBASE (Segura e Inteligente)
-        async function setupFirebase() {
-            try {
-                if (typeof __firebase_config !== 'undefined' && __firebase_config) {
-                    const firebaseConfig = JSON.parse(__firebase_config);
-                    app = initializeApp(firebaseConfig);
-                    auth = getAuth(app);
-                    db = getFirestore(app);
-
-                    const initAuth = async () => {
-                        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                            await signInWithCustomToken(auth, __initial_auth_token);
-                        } else {
-                            await signInAnonymously(auth);
-                        }
-                    };
-                    
-                    await initAuth();
-
-                    onAuthStateChanged(auth, (user) => {
-                        if (user) {
-                            firebaseUser = user;
-                            useFirebase = true;
-                            document.getElementById('badge-cloud').classList.remove('hidden');
-                            document.getElementById('badge-local').classList.add('hidden');
-                            document.getElementById('auth-warning').classList.add('hidden');
-                            initListeners();
-                        } else {
-                            if (useFirebase) fallbackToLocal("Sesión cerrada por el servidor.");
-                        }
-                    });
-                } else {
-                    fallbackToLocal("Entorno sin credenciales de nube aprovisionadas.");
-                }
-            } catch (e) {
-                console.error("Firebase error: ", e);
-                fallbackToLocal(e.message);
-            }
-        }
-
-        function fallbackToLocal(reason = "") {
-            useFirebase = false;
-            document.getElementById('badge-local').classList.remove('hidden');
-            document.getElementById('badge-cloud').classList.add('hidden');
+        const setupListeners = async () => {
+            await signInAnonymously(auth);
             
-            const warningBox = document.getElementById('auth-warning');
-            warningBox.classList.remove('hidden');
-            
-            // Cargar datos en memoria local activa
-            if (users.length === 0) {
-                users = [
-                    { username: 'Drake Cora', password: '123', balance: 1500, level: 5, status: 'offline', last_active: Date.now() },
-                    { username: 'Agente Shadow', password: '123', balance: 840, level: 3, status: 'offline', last_active: Date.now() }
-                ];
-            }
-            if (historyLogs.length === 0) {
-                historyLogs = [{ id: '1', msg: 'Enlace local táctico listo. Abre otra pestaña para ver sincronización.', timestamp: Date.now() }];
-            }
-
-            renderAll();
-            hideLoading();
-            lucide.createIcons();
-        }
-
-        function hideLoading() {
-            document.getElementById('loading-screen').classList.add('hidden');
-            checkSavedSession();
-        }
-
-        // CONTROLADORES DE BASE DE DATOS
-        function initListeners() {
-            if (!useFirebase || !firebaseUser) return;
-
-            const usersRef = collection(db, 'artifacts', appId, 'public', 'data', 'users');
-            onSnapshot(usersRef, (snapshot) => {
+            // Listen to users globally
+            onSnapshot(getPublicRef('users'), (snap) => {
                 users = [];
-                snapshot.forEach((doc) => users.push(doc.data()));
-                renderAll();
-                hideLoading();
-            }, (error) => console.error("Users sync error:", error));
-
-            const logsRef = collection(db, 'artifacts', appId, 'public', 'data', 'logs');
-            onSnapshot(logsRef, (snapshot) => {
-                historyLogs = [];
-                snapshot.forEach((doc) => historyLogs.push(doc.data()));
-                historyLogs.sort((a,b) => b.timestamp - a.timestamp);
-                renderHistory();
-            }, (error) => console.error("Logs sync error:", error));
-
-            const settingsRef = collection(db, 'artifacts', appId, 'public', 'data', 'settings');
-            onSnapshot(settingsRef, (snapshot) => {
-                snapshot.forEach((doc) => {
-                    if (doc.id === 'general') {
-                        adminSettings = doc.data();
-                        document.getElementById('prize-pool-display').innerText = adminSettings.globalPool || '1.5T';
-                        document.getElementById('display-telegram-id').innerText = adminSettings.telegramId || 'Sin Configurar';
-                    }
-                });
-            }, (error) => console.error("Settings sync error:", error));
-        }
-
-        // CANAL DE TRANSMISIÓN DE EVENTOS LOCALES (BroadcastChannel para pruebas inter-pestañas instantáneas)
-        localSyncChannel.onmessage = (event) => {
-            const { type, data } = event.data;
-            if (type === 'SYNC_ALL') {
-                users = data.users;
-                historyLogs = data.historyLogs;
-                adminSettings = data.adminSettings;
-                renderAll();
-                showNotification("📡 Red Sincronizada Localmente");
-            } else if (type === 'PULSE_REQUEST') {
-                // Responder enviando mis datos locales
-                broadcastState();
-            }
+                snap.forEach(d => users.push(d.data()));
+                renderRanking();
+            });
         };
 
-        function broadcastState() {
-            localSyncChannel.postMessage({
-                type: 'SYNC_ALL',
-                data: { users, historyLogs, adminSettings }
-            });
-        }
+        const renderRanking = () => {
+            const container = document.getElementById('ranking-container');
+            container.innerHTML = users.sort((a,b) => b.balance - a.balance).map((u, i) => `
+                <div class="flex justify-between p-3 bg-neutral-900 rounded-lg">
+                    <span>#${i+1} ${u.username}</span>
+                    <span class="text-yellow-500 font-bold">${u.balance} PTS</span>
+                </div>
+            `).join('');
+        };
 
-        // GUARDADO DE DATOS (Nube o Memoria Local con Broadcast automático)
-        async function saveUserToDB(userObj) {
-            if (useFirebase && firebaseUser) {
-                const userDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', userObj.username.toLowerCase());
-                await setDoc(userDocRef, userObj);
-            } else {
-                const index = users.findIndex(u => u.username.toLowerCase() === userObj.username.toLowerCase());
-                if (index !== -1) users[index] = userObj;
-                else users.push(userObj);
-                renderAll();
-                broadcastState(); // Transmitir cambio a otras pestañas
-            }
-        }
-
-        async function deleteUserFromDB(username) {
-            if (useFirebase && firebaseUser) {
-                const userDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', username.toLowerCase());
-                await deleteDoc(userDocRef);
-            } else {
-                users = users.filter(u => u.username.toLowerCase() !== username.toLowerCase());
-                renderAll();
-                broadcastState();
-            }
-        }
-
-        async function saveSettingsToDB() {
-            if (useFirebase && firebaseUser) {
-                const settingsDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'general');
-                await setDoc(settingsDocRef, adminSettings);
-            } else {
-                renderAll();
-                broadcastState();
-            }
-        }
-
-        async function appendLogToDB(msgText) {
-            const logObj = { id: crypto.randomUUID(), msg: msgText, timestamp: Date.now() };
-            if (useFirebase && firebaseUser) {
-                const logDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'logs', logObj.id);
-                await setDoc(logDocRef, logObj);
-            } else {
-                historyLogs.unshift(logObj);
-                renderHistory();
-                broadcastState();
-            }
-        }
-
-        // CONTROL DE SESIÓN
-        function checkSavedSession() {
-            showAuthScreen();
-        }
-
-        function showAuthScreen() {
-            document.getElementById('auth-screen').classList.remove('hidden');
-            document.getElementById('app-screen').classList.add('hidden');
-        }
-
-        function loginAgent(agent) {
-            currentUser = agent;
-            currentUser.status = 'online';
-            currentUser.last_active = Date.now();
-            saveUserToDB(currentUser);
-
-            // Actualizar interfaz
-            document.getElementById('header-username').innerText = currentUser.username;
-            document.getElementById('header-balance').innerText = `${currentUser.balance} PTS`;
-            document.getElementById('wm-username').innerText = currentUser.username;
-            document.getElementById('wm-level').innerText = currentUser.level;
-
-            // Verificar si es administrador
-            if (currentUser.username.toLowerCase() === ADMIN_USER) {
-                document.getElementById('nav-panel').classList.remove('hidden');
-                document.getElementById('admin-pool-edit').classList.remove('hidden');
-            } else {
-                document.getElementById('nav-panel').classList.add('hidden');
-                document.getElementById('admin-pool-edit').classList.add('hidden');
-            }
-
+        // Authentication
+        document.getElementById('auth-form').onsubmit = async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('auth-username').value;
+            currentUser = { username, balance: 0, level: 1, lastActive: Date.now() };
+            
+            await setDoc(doc(getPublicRef('users'), username.toLowerCase()), currentUser);
+            
             document.getElementById('auth-screen').classList.add('hidden');
             document.getElementById('app-screen').classList.remove('hidden');
-            appendLogToDB(`Agente ${currentUser.username} ha establecido conexión táctica.`);
-            
-            showTab('game');
-            resetGame();
-        }
+            document.getElementById('header-username').innerText = username;
+        };
 
-        // INTERFAZ DE NAVEGACIÓN Y RENDERIZACIÓN
-        function showTab(tabId) {
-            // Ocultar todas las secciones
-            document.getElementById('tab-game').classList.add('hidden');
-            document.getElementById('tab-ranking').classList.add('hidden');
-            document.getElementById('tab-panel').classList.add('hidden');
-            document.getElementById('tab-history').classList.add('hidden');
+        // Navigation
+        document.querySelectorAll('.nav-btn').forEach(b => {
+            b.onclick = () => {
+                document.getElementById('tab-game').classList.toggle('hidden', b.dataset.tab !== 'game');
+                document.getElementById('tab-ranking').classList.toggle('hidden', b.dataset.tab !== 'ranking');
+            };
+        });
 
-            // Mostrar la correcta
-            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+        // Game Init
+        setupListeners().then(() => {
+            document.getElementById('loading-screen').classList.add('hidden');
+            document.getElementById('auth-screen').classList.remove('hidden');
+        });
 
-            // Actualizar diseño de botones
-            document.querySelectorAll('.nav-btn').forEach(btn => {
-                if (btn.dataset.tab === tabId) {
-                    btn.classList.add('text-red-500');
-                    btn.classList.remove('text-neutral-600', 'hover:text-neutral-400');
-                } else {
-                    btn.classList.remove('text-red-500');
-                    btn.classList.add('text-neutral-600', 'hover:text-neutral-400');
-                }
-            });
-
-            if (tabId === 'panel') renderAdminPanel();
-            if (tabId === 'ranking') renderRanking();
-            if (tabId === 'history') renderHistory();
-        }
-
-        function renderAll() {
-            renderActiveAgents();
-            renderRanking();
-            renderHistory();
-            renderAdminPanel();
-            if (currentUser) {
-                const updatedMe = users.find(u => u.username.toLowerCase() === currentUser.username.toLowerCase());
-                if (updatedMe) {
-                    currentUser = updatedMe;
+        // Simple Mine Grid Init
+        const grid = document.getElementById('mines-grid');
+        grid.style.gridTemplateColumns = 'repeat(10, minmax(0, 1fr))';
+        for(let i=0; i<100; i++) {
+            const cell = document.createElement('div');
+            cell.className = "cell w-8 h-8 bg-neutral-800 rounded";
+            cell.onclick = () => {
+                cell.classList.add('revealed');
+                if(currentUser) {
+                    currentUser.balance += 10;
+                    setDoc(doc(getPublicRef('users'), currentUser.username.toLowerCase()), currentUser);
                     document.getElementById('header-balance').innerText = `${currentUser.balance} PTS`;
                 }
-            }
+            };
+            grid.appendChild(cell);
         }
-
-        function renderActiveAgents() {
-            const container = document.getElementById('active-agents-container');
-            container.innerHTML = '';
-            // Agentes activos en los últimos 5 minutos
-            const activeThreshold = Date.now() - (5 * 60 * 1000);
-            const activeOnes = users.filter(u => u.status === 'online' || u.last_active > activeThreshold);
-            
-            if (activeOnes.length === 0) {
-                container.innerHTML = `<span class="text-neutral-600 italic">No hay agentes activos</span>`;
-                return;
-            }
-
-            activeOnes.forEach(u => {
-                const isMe = currentUser && u.username.toLowerCase() === currentUser.username.toLowerCase();
-                const badge = document.createElement('span');
-                badge.className = `px-2 py-0.5 rounded-full border text-[9px] uppercase tracking-wider flex items-center gap-1 font-black ${
-                    isMe ? 'bg-red-950/40 text-red-400 border-red-500/50' : 'bg-neutral-900 text-neutral-400 border-neutral-800'
-                }`;
-                badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> ${u.username}`;
-                container.appendChild(badge);
-            });
-        }
-
-        function renderRanking() {
-            const container = document.getElementById('ranking-container');
-            container.innerHTML = '';
-            
-            // Ordenar en base a balance descendente
-            const sorted = [...users].sort((a,b) => b.balance - a.balance);
-
-            if (sorted.length === 0) {
-                container.innerHTML = `<div class="p-4 text-center text-xs text-neutral-500">Ningún agente registrado en el ranking global.</div>`;
-                return;
-            }
-
-            sorted.forEach((u, i) => {
-                const isMe = currentUser && u.username.toLowerCase() === currentUser.username.toLowerCase();
-                const rankRow = document.createElement('div');
-                rankRow.className = `flex justify-between items-center p-3.5 border-b border-neutral-800/60 last:border-0 ${
-                    isMe ? 'bg-red-950/20' : 'hover:bg-neutral-900/50'
-                } transition-colors`;
-
-                let medal = `<span class="font-mono text-neutral-500 text-xs">${i+1}</span>`;
-                if (i === 0) medal = `🥇`;
-                else if (i === 1) medal = `🥈`;
-                else if (i === 2) medal = `🥉`;
-
-                rankRow.innerHTML = `
-                    <div class="flex items-center gap-3">
-                       <div class="w-6 text-center">${medal}</div>
-                       <div>
-                         <p class="text-xs font-black uppercase tracking-wider ${isMe ? 'text-red-400' : 'text-neutral-200'}">${u.username}</p>
-                         <p class="text-[8px] font-black uppercase text-neutral-500 tracking-wider">Nivel Táctico: ${u.level}</p>
-                       </div>
-                    </div>
-                    <div class="text-right">
-                       <p class="text-xs font-black text-yellow-500">${u.balance} PTS</p>
-                    </div>
-                `;
-                container.appendChild(rankRow);
-            });
-        }
-
-        function renderHistory() {
-            const container = document.getElementById('history-container');
-            container.innerHTML = '';
-
-            if (historyLogs.length === 0) {
-                container.innerHTML = `<div class="text-center p-4 text-xs text-neutral-600 italic">No hay registros tácticos registrados.</div>`;
-                return;
-            }
-
-            historyLogs.slice(0, 30).forEach(log => {
-                const date = new Date(log.timestamp).toLocaleTimeString();
-                const item = document.createElement('div');
-                item.className = 'bg-neutral-900/80 border border-neutral-800/80 p-3 rounded-xl flex gap-3 items-start';
-                item.innerHTML = `
-                    <i data-lucide="terminal" class="w-3.5 h-3.5 text-neutral-600 shrink-0 mt-0.5"></i>
-                    <div class="flex-1">
-                      <p class="text-[10px] text-neutral-300 font-bold tracking-wide">${log.msg}</p>
-                      <span class="text-[8px] text-neutral-600 font-black tracking-widest mt-1 block">${date}</span>
-                    </div>
-                `;
-                container.appendChild(item);
-            });
-            lucide.createIcons();
-        }
-
-        function renderAdminPanel() {
-            if (!currentUser || currentUser.username.toLowerCase() !== ADMIN_USER) return;
-            const container = document.getElementById('admin-users-list');
-            container.innerHTML = '';
-
-            users.forEach(u => {
-                const row = document.createElement('div');
-                row.className = 'bg-neutral-950 border border-neutral-800 p-3.5 rounded-xl flex justify-between items-center gap-3';
-                row.innerHTML = `
-                    <div>
-                      <p class="text-xs font-black uppercase text-white">${u.username}</p>
-                      <p class="text-[9px] font-mono text-neutral-500 mt-1">Clave: <span class="text-neutral-300">${u.password}</span> | Nivel: ${u.level} | Balance: ${u.balance} PTS</p>
-                    </div>
-                    <div class="flex gap-1.5">
-                      <button data-username="${u.username}" class="btn-edit-usr p-1.5 rounded-lg bg-neutral-900 border border-neutral-800 hover:text-white text-red-500 transition-colors">
-                        <i data-lucide="edit" class="w-3.5 h-3.5"></i>
-                      </button>
-                      <button data-username="${u.username}" class="btn-delete-usr p-1.5 rounded-lg bg-neutral-900 border border-neutral-800 hover:bg-red-950 hover:text-red-500 text-neutral-500 transition-all">
-                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-                      </button>
-                    </div>
-                `;
-                container.appendChild(row);
-            });
-
-            // Registrar listeners para botones dinámicos de administración
-            document.querySelectorAll('.btn-edit-usr').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    const matchedUser = users.find(u => u.username.toLowerCase() === btn.dataset.username.toLowerCase());
-                    if (matchedUser) openEditUserModal(matchedUser);
-                });
-            });
-
-            document.querySelectorAll('.btn-delete-usr').forEach(btn => {
-                btn.addEventListener('click', async (e) => {
-                    if (confirm(`¿Confirma eliminar definitivamente al agente ${btn.dataset.username}?`)) {
-                        await deleteUserFromDB(btn.dataset.username);
-                        showNotification('Operativo eliminado con éxito');
-                    }
-                });
-            });
-
-            lucide.createIcons();
-        }
-
-        function openEditUserModal(userObj) {
-            document.getElementById('edit-orig-user').value = userObj.username;
-            document.getElementById('edit-username').value = userObj.username;
-            document.getElementById('edit-password').value = userObj.password;
-            document.getElementById('edit-level').value = userObj.level;
-            document.getElementById('edit-balance').value = userObj.balance;
-            document.getElementById('modal-edit-user').classList.remove('hidden');
-        }
-
-        // LÓGICA DEL MOTOR MINESWEEPER
-        function resetGame() {
-            clearInterval(timerInterval);
-            timerInterval = null;
-            gameState = 'idle';
-            timeElapsed = 0;
-            flagsPlaced = 0;
-            sessionPoints = 0;
-            currentMode = 'dig';
-            
-            // Actualizar UI
-            document.getElementById('game-time').innerText = '0';
-            document.getElementById('game-mines-left').innerText = gameConfig.mines;
-            document.getElementById('game-session-points').innerText = '+0';
-            document.getElementById('game-session-points').className = 'flex items-center gap-1.5 px-3 py-1.5 border-r border-neutral-800 font-black text-neutral-500';
-            
-            document.getElementById('game-controls-idle').classList.remove('hidden');
-            document.getElementById('game-controls-playing').classList.add('hidden');
-            document.getElementById('game-controls-ended').classList.add('hidden');
-
-            document.getElementById('mines-grid').innerHTML = '';
-            document.getElementById('mines-standby').classList.remove('hidden');
-            document.getElementById('result-overlay').classList.add('hidden');
-            
-            // Ajustar configuraciones según el nivel táctico del jugador
-            if (currentUser) {
-                document.getElementById('game-level').innerText = `Nivel ${currentUser.level}`;
-                gameConfig.rows = 8 + Math.min(currentUser.level, 4); 
-                gameConfig.cols = 8 + Math.min(currentUser.level, 4); 
-                gameConfig.mines = 10 + (currentUser.level * 2);
-                document.getElementById('game-mines-left').innerText = gameConfig.mines;
-            }
-        }
-
-        function startGame() {
-            sounds.click();
-            gameState = 'playing';
-            document.getElementById('game-controls-idle').classList.add('hidden');
-            document.getElementById('game-controls-playing').classList.remove('hidden');
-            document.getElementById('mines-standby').classList.add('hidden');
-            
-            buildBoard();
-            renderBoard();
-            startTimer();
-        }
-
-        function startTimer() {
-            const timerIcon = document.getElementById('game-timer-icon');
-            timerInterval = setInterval(() => {
-                timeElapsed++;
-                document.getElementById('game-time').innerText = timeElapsed;
-                timerIcon.classList.toggle('text-red-500');
-            }, 1000);
-        }
-
-        function buildBoard() {
-            board = [];
-            for (let r = 0; r < gameConfig.rows; r++) {
-                const row = [];
-                for (let c = 0; c < gameConfig.cols; c++) {
-                    row.push({
-                        r, c,
-                        isMine: false,
-                        isRevealed: false,
-                        isFlagged: false,
-                        adjacentMines: 0
-                    });
-                }
-                board.push(row);
-            }
-        }
-
-        function placeMines(firstRow, firstCol) {
-            let placed = 0;
-            while (placed < gameConfig.mines) {
-                const r = Math.floor(Math.random() * gameConfig.rows);
-                const c = Math.floor(Math.random() * gameConfig.cols);
-
-                const isFirstClickArea = Math.abs(r - firstRow) <= 1 && Math.abs(c - firstCol) <= 1;
-
-                if (!board[r][c].isMine && !isFirstClickArea) {
-                    board[r][c].isMine = true;
-                    placed++;
-                }
-            }
-
-            for (let r = 0; r < gameConfig.rows; r++) {
-                for (let c = 0; c < gameConfig.cols; c++) {
-                    if (board[r][c].isMine) continue;
-                    let count = 0;
-                    for (let dr = -1; dr <= 1; dr++) {
-                        for (let dc = -1; dc <= 1; dc++) {
-                            const nr = r + dr;
-                            const nc = c + dc;
-                            if (nr >= 0 && nr < gameConfig.rows && nc >= 0 && nc < gameConfig.cols) {
-                                if (board[nr][nc].isMine) count++;
-                            }
-                        }
-                    }
-                    board[r][c].adjacentMines = count;
-                }
-            }
-        }
-
-        function renderBoard() {
-            const grid = document.getElementById('mines-grid');
-            grid.innerHTML = '';
-            grid.style.gridTemplateColumns = `repeat(${gameConfig.cols}, minmax(0, 1fr))`;
-
-            for (let r = 0; r < gameConfig.rows; r++) {
-                for (let c = 0; c < gameConfig.cols; c++) {
-                    const cellEl = document.createElement('button');
-                    cellEl.dataset.r = r;
-                    cellEl.dataset.c = c;
-                    cellEl.className = `cell w-8 h-8 sm:w-10 sm:h-10 text-xs font-black rounded-lg border border-neutral-800 bg-neutral-900 flex items-center justify-center transition-all focus:outline-none select-none`;
-
-                    cellEl.addEventListener('click', (e) => {
-                        e.preventDefault();
-                        handleCellInteraction(r, c);
-                    });
-
-                    cellEl.addEventListener('contextmenu', (e) => {
-                        e.preventDefault();
-                        toggleFlag(r, c);
-                    });
-
-                    grid.appendChild(cellEl);
-                }
-            }
-        }
-
-        function handleCellInteraction(r, c) {
-            if (gameState !== 'playing') return;
-            if (currentMode === 'flag') {
-                toggleFlag(r, c);
-            } else {
-                revealCell(r, c);
-            }
-        }
-
-        function toggleFlag(r, c) {
-            const cell = board[r][c];
-            if (cell.isRevealed) return;
-
-            sounds.flag();
-            cell.isFlagged = !cell.isFlagged;
-            flagsPlaced += cell.isFlagged ? 1 : -1;
-            
-            const minesLeft = Math.max(0, gameConfig.mines - flagsPlaced);
-            document.getElementById('game-mines-left').innerText = minesLeft;
-
-            updateCellUI(r, c);
-        }
-
-        function revealCell(r, c) {
-            const cell = board[r][c];
-            if (cell.isRevealed || cell.isFlagged) return;
-
-            const isFirstClick = !board.some(row => row.some(cell => cell.isRevealed));
-            if (isFirstClick) {
-                placeMines(r, c);
-            }
-
-            cell.isRevealed = true;
-            sounds.click();
-
-            if (cell.isMine) {
-                triggerLoss(r, c);
-                return;
-            }
-
-            sessionPoints += PTS_PER_CELL;
-            document.getElementById('game-session-points').innerText = `+${sessionPoints}`;
-            document.getElementById('game-session-points').className = 'flex items-center gap-1.5 px-3 py-1.5 border-r border-neutral-800 font-black text-emerald-500';
-
-            if (cell.adjacentMines === 0) {
-                for (let dr = -1; dr <= 1; dr++) {
-                    for (let dc = -1; dc <= 1; dc++) {
-                        const nr = r + dr;
-                        const nc = c + dc;
-                        if (nr >= 0 && nr < gameConfig.rows && nc >= 0 && nc < gameConfig.cols) {
-                            revealCell(nr, nc);
-                        }
-                    }
-                }
-            }
-
-            updateCellUI(r, c);
-            checkWinCondition();
-        }
-
-        function updateCellUI(r, c) {
-            const cell = board[r][c];
-            const cellEl = document.querySelector(`.cell[data-r="${r}"][data-c="${c}"]`);
-            if (!cellEl) return;
-
-            if (cell.isRevealed) {
-                cellEl.classList.add('revealed');
-                cellEl.classList.remove('bg-neutral-900');
-                
-                if (cell.isMine) {
-                    cellEl.innerHTML = `<i data-lucide="bomb" class="w-4 h-4 text-red-500"></i>`;
-                } else if (cell.adjacentMines > 0) {
-                    const colors = [
-                        'text-blue-400', 'text-emerald-400', 'text-red-400', 
-                        'text-purple-400', 'text-yellow-400', 'text-cyan-400', 
-                        'text-pink-400', 'text-orange-400'
-                    ];
-                    cellEl.className += ` ${colors[cell.adjacentMines - 1]}`;
-                    cellEl.innerText = cell.adjacentMines;
-                } else {
-                    cellEl.innerText = '';
-                }
-            } else if (cell.isFlagged) {
-                cellEl.innerHTML = `<i data-lucide="flag" class="w-4 h-4 text-red-500 fill-current"></i>`;
-            } else {
-                cellEl.innerHTML = '';
-            }
-            lucide.createIcons();
-        }
-
-        function triggerLoss(hitR, hitC) {
-            gameState = 'lost';
-            clearInterval(timerInterval);
-            sounds.bomb();
-
-            for (let r = 0; r < gameConfig.rows; r++) {
-                for (let c = 0; c < gameConfig.cols; c++) {
-                    if (board[r][c].isMine) {
-                        board[r][c].isRevealed = true;
-                        updateCellUI(r, c);
-                    }
-                }
-            }
-
-            const explodedEl = document.querySelector(`.cell[data-r="${hitR}"][data-c="${hitC}"]`);
-            if (explodedEl) explodedEl.classList.add('bg-red-950/60', 'border-red-600', 'tactical-glow');
-
-            document.getElementById('game-controls-playing').classList.add('hidden');
-            document.getElementById('game-controls-ended').classList.remove('hidden');
-
-            appendLogToDB(`Agente ${currentUser.username} cayó en una mina táctica en Nivel ${currentUser.level}.`);
-            notifyTelegram(`Agente 👤 <b>${currentUser.username}</b> falló la misión al explotar una mina en el Nivel <b>${currentUser.level}</b>.`);
-
-            showResultScreen(false);
-        }
-
-        function checkWinCondition() {
-            let unrevealedSafeCells = 0;
-            for (let r = 0; r < gameConfig.rows; r++) {
-                for (let c = 0; c < gameConfig.cols; c++) {
-                    if (!board[r][c].isMine && !board[r][c].isRevealed) {
-                        unrevealedSafeCells++;
-                    }
-                }
-            }
-
-            if (unrevealedSafeCells === 0) {
-                triggerWin();
-            }
-        }
-
-        async function triggerWin() {
-            gameState = 'won';
-            clearInterval(timerInterval);
-            sounds.win();
-
-            const finalPoints = sessionPoints + PTS_WIN_BONUS;
-            currentUser.balance += finalPoints;
-            currentUser.level += 1;
-            await saveUserToDB(currentUser);
-
-            document.getElementById('game-controls-playing').classList.add('hidden');
-            document.getElementById('game-controls-ended').classList.remove('hidden');
-
-            appendLogToDB(`Agente ${currentUser.username} completó con éxito el Nivel ${currentUser.level - 1} (+${finalPoints} PTS).`);
-            notifyTelegram(`Agente 👤 <b>${currentUser.username}</b> superó con éxito el Nivel <b>${currentUser.level - 1}</b> sumando <b>+${finalPoints} PTS</b>.`);
-
-            showResultScreen(true, finalPoints);
-        }
-
-        function showResultScreen(isVictory, pts = 0) {
-            const overlay = document.getElementById('result-overlay');
-            const iconContainer = document.getElementById('result-icon-container');
-            const title = document.getElementById('result-title');
-            const points = document.getElementById('result-points');
-            const detail = document.getElementById('result-detail');
-
-            overlay.classList.remove('hidden');
-
-            if (isVictory) {
-                iconContainer.innerHTML = `
-                    <div class="absolute inset-0 border border-emerald-500 rounded-full animate-ping opacity-30"></div>
-                    <div class="p-6 bg-emerald-950/80 rounded-full border border-emerald-500/50 text-emerald-500 success-glow">
-                      <i data-lucide="shield-check" class="w-16 h-16 mx-auto"></i>
-                    </div>
-                `;
-                title.innerText = 'OPERACIÓN LIMPIA';
-                title.className = 'text-2xl font-black uppercase tracking-widest text-emerald-500 drop-shadow-[0_0_15px_rgba(16,185,129,0.5)]';
-                points.innerText = `+${pts} PTS`;
-                points.className = 'font-black text-xl mt-2 bg-emerald-950/80 text-emerald-400 inline-block px-5 py-1.5 rounded-full border border-emerald-500/30 shadow-lg';
-                detail.innerText = `Despeje total de minas en ${timeElapsed}s. Enlace de nivel ascendente activado.`;
-            } else {
-                iconContainer.innerHTML = `
-                    <div class="absolute inset-0 border border-red-500 rounded-full animate-ping opacity-30"></div>
-                    <div class="p-6 bg-red-950/80 rounded-full border border-red-500/50 text-red-500 tactical-glow">
-                      <i data-lucide="shield-alert" class="w-16 h-16 mx-auto"></i>
-                    </div>
-                `;
-                title.innerText = 'CONEXIÓN PERDIDA';
-                title.className = 'text-2xl font-black uppercase tracking-widest text-red-500 drop-shadow-[0_0_15px_rgba(220,38,38,0.5)]';
-                points.innerText = `+0 PTS`;
-                points.className = 'font-black text-xl mt-2 bg-red-950/80 text-red-500 inline-block px-5 py-1.5 rounded-full border border-red-500/30 shadow-lg';
-                detail.innerText = `Has detonado un artefacto explosivo en ${timeElapsed}s. Intenta nuevamente.`;
-            }
-            lucide.createIcons();
-        }
-
-        // CONFIRMACIONES Y MODALES TÁCTICOS
-        function showAbortConfirmation() {
-            sounds.alert();
-            document.getElementById('modal-tactical-confirm').classList.remove('hidden');
-        }
-
-        function hideAbortConfirmation() {
-            document.getElementById('modal-tactical-confirm').classList.add('hidden');
-        }
-
-        // FUNCIÓN COMPARTIR Y EXPORTAR (HTML2Canvas)
-        async function captureDashboard() {
-            sounds.click();
-            const watermark = document.getElementById('capture-watermark');
-            const shareBtn = document.getElementById('btn-share');
-            
-            watermark.classList.remove('hidden');
-            shareBtn.classList.add('opacity-0');
-
-            try {
-                const canvas = await html2canvas(document.getElementById('capture-zone'), {
-                    backgroundColor: '#0a0a0a',
-                    scale: 2,
-                    logging: false
-                });
-
-                const dataUrl = canvas.toDataURL('image/png');
-                
-                const link = document.createElement('a');
-                link.download = `Expediente-DangerMines-${currentUser.username}.png`;
-                link.href = dataUrl;
-                link.click();
-                showNotification('Expediente descargado con éxito.');
-            } catch (error) {
-                console.error("Dashboard Capture Error: ", error);
-                showNotification('Fallo al exportar expediente.');
-            } finally {
-                watermark.classList.add('hidden');
-                shareBtn.classList.remove('opacity-0');
-            }
-        }
-
-        // CONTROL DE EVENTOS DOM
-        document.addEventListener('DOMContentLoaded', () => {
-            setupFirebase();
-
-            // Alternar vista de contraseña en Login
-            document.getElementById('toggle-password').addEventListener('click', () => {
-                const passInput = document.getElementById('auth-password');
-                const eyeIcon = document.getElementById('eye-icon');
-                if (passInput.type === 'password') {
-                    passInput.type = 'text';
-                    eyeIcon.setAttribute('data-lucide', 'eye-off');
-                } else {
-                    passInput.type = 'password';
-                    eyeIcon.setAttribute('data-lucide', 'eye');
-                }
-                lucide.createIcons();
-            });
-
-            // Recordar sesión checkbox
-            document.getElementById('toggle-remember').addEventListener('click', () => {
-                rememberMe = !rememberMe;
-                const box = document.getElementById('remember-box');
-                const check = document.getElementById('remember-check');
-                if (rememberMe) {
-                    box.className = "w-4 h-4 rounded border flex items-center justify-center transition-colors bg-red-600 border-red-500 text-white";
-                    check.classList.remove('hidden');
-                } else {
-                    box.className = "w-4 h-4 rounded border flex items-center justify-center transition-colors bg-neutral-950 border-neutral-800 text-transparent";
-                    check.classList.add('hidden');
-                }
-            });
-
-            // Cambiar modo Login / Registro
-            document.getElementById('auth-switch-btn').addEventListener('click', () => {
-                isLoginMode = !isLoginMode;
-                const titleBtn = document.getElementById('auth-btn-text');
-                const authIcon = document.getElementById('auth-btn-icon');
-                const switchBtn = document.getElementById('auth-switch-btn');
-
-                if (isLoginMode) {
-                    titleBtn.innerText = 'Iniciar Secuencia';
-                    authIcon.setAttribute('data-lucide', 'log-in');
-                    switchBtn.innerText = '¿Nuevo Recluta? Iniciar Enlace';
-                } else {
-                    titleBtn.innerText = 'Registrar Operativo';
-                    authIcon.setAttribute('data-lucide', 'user-plus');
-                    switchBtn.innerText = '¿Ya registrado? Iniciar Secuencia';
-                }
-                lucide.createIcons();
-            });
-
-            // Formulario Autenticación
-            document.getElementById('auth-form').addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const usernameInput = document.getElementById('auth-username').value.trim();
-                const passwordInput = document.getElementById('auth-password').value;
-
-                if (!usernameInput || !passwordInput) return;
-
-                const matchedUser = users.find(u => u.username.toLowerCase() === usernameInput.toLowerCase());
-
-                if (isLoginMode) {
-                    if (matchedUser) {
-                        if (matchedUser.password === passwordInput) {
-                            loginAgent(matchedUser);
-                        } else {
-                            showNotification('Código de Seguridad Incorrecto.');
-                        }
-                    } else {
-                        showNotification('El Agente no existe.');
-                    }
-                } else {
-                    if (matchedUser) {
-                        showNotification('El Identificador ya está ocupado.');
-                    } else {
-                        const newAgent = {
-                            username: usernameInput,
-                            password: passwordInput,
-                            balance: 0,
-                            level: 1,
-                            status: 'online',
-                            last_active: Date.now()
-                        };
-                        await saveUserToDB(newAgent);
-                        loginAgent(newAgent);
-                        showNotification('Agente vinculado a la red.');
-                    }
-                }
-            });
-
-            // Botón Forzar Sincronización Manual
-            document.getElementById('btn-force-sync').addEventListener('click', () => {
-                sounds.click();
-                if (useFirebase) {
-                    // Firebase sincroniza automáticamente en tiempo real por onSnapshot,
-                    // pero podemos forzar un log global para comprobar conectividad
-                    appendLogToDB(`Agente ${currentUser?.username || "Anónimo"} solicitó pulso de red global.`);
-                    showNotification("📡 Pulso global emitido a la nube");
-                } else {
-                    // Sincronización local instantánea entre pestañas
-                    localSyncChannel.postMessage({ type: 'PULSE_REQUEST' });
-                    showNotification("📡 Sincronización forzada inter-pestañas");
-                }
-            });
-
-            // Cerrar Sesión
-            document.getElementById('btn-logout').addEventListener('click', async () => {
-                if (currentUser) {
-                    currentUser.status = 'offline';
-                    currentUser.last_active = Date.now();
-                    await saveUserToDB(currentUser);
-                }
-                currentUser = null;
-                showAuthScreen();
-            });
-
-            // Mute / Desmute
-            document.getElementById('btn-mute').addEventListener('click', () => {
-                isMuted = !isMuted;
-                const icon = document.getElementById('mute-icon');
-                if (isMuted) {
-                    icon.setAttribute('data-lucide', 'volume-x');
-                    icon.classList.add('text-red-500');
-                } else {
-                    icon.setAttribute('data-lucide', 'volume-2');
-                    icon.classList.remove('text-red-500');
-                }
-                lucide.createIcons();
-            });
-
-            // Copiar enlace de juego
-            document.getElementById('btn-copy-link').addEventListener('click', () => {
-                const el = document.createElement('textarea');
-                el.value = window.location.href;
-                document.body.appendChild(el);
-                el.select();
-                document.execCommand('copy');
-                document.body.removeChild(el);
-                showNotification('Enlace táctico copiado.');
-            });
-
-            // Botones de juego básicos
-            document.getElementById('btn-start-game').addEventListener('click', () => {
-                startGame();
-            });
-
-            document.getElementById('btn-abort').addEventListener('click', () => {
-                showAbortConfirmation();
-            });
-
-            document.getElementById('btn-confirm-no').addEventListener('click', () => {
-                hideAbortConfirmation();
-            });
-
-            document.getElementById('btn-confirm-yes').addEventListener('click', () => {
-                hideAbortConfirmation();
-                resetGame();
-            });
-
-            document.getElementById('btn-next-try').addEventListener('click', () => {
-                resetGame();
-            });
-
-            // Modos de juego: Dig / Flag
-            document.getElementById('btn-mode-dig').addEventListener('click', () => {
-                currentMode = 'dig';
-                document.getElementById('btn-mode-dig').className = 'flex-1 rounded-xl font-black text-[10px] uppercase tracking-wider flex justify-center items-center gap-1.5 transition-all bg-red-600 text-white shadow-inner py-3 border border-red-500';
-                document.getElementById('btn-mode-flag').className = 'flex-1 rounded-xl font-black text-[10px] uppercase tracking-wider flex justify-center items-center gap-1.5 transition-all bg-neutral-950 text-neutral-500 border border-neutral-800 py-3';
-                sounds.click();
-            });
-
-            document.getElementById('btn-mode-flag').addEventListener('click', () => {
-                currentMode = 'flag';
-                document.getElementById('btn-mode-flag').className = 'flex-1 rounded-xl font-black text-[10px] uppercase tracking-wider flex justify-center items-center gap-1.5 transition-all bg-red-600 text-white shadow-inner py-3 border border-red-500';
-                document.getElementById('btn-mode-dig').className = 'flex-1 rounded-xl font-black text-[10px] uppercase tracking-wider flex justify-center items-center gap-1.5 transition-all bg-neutral-950 text-neutral-500 border border-neutral-800 py-3';
-                sounds.click();
-            });
-
-            // Botón Compartir Captura
-            document.getElementById('btn-share').addEventListener('click', () => {
-                captureDashboard();
-            });
-
-            // Panel de Control Supremo Admin: Editar Telegram ID
-            document.getElementById('btn-edit-tg').addEventListener('click', () => {
-                document.getElementById('view-telegram-id').classList.add('hidden');
-                document.getElementById('form-telegram-id').classList.remove('hidden');
-                document.getElementById('input-tg').value = adminSettings.telegramId || '';
-            });
-
-            document.getElementById('btn-cancel-tg').addEventListener('click', () => {
-                document.getElementById('view-telegram-id').classList.remove('hidden');
-                document.getElementById('form-telegram-id').classList.add('hidden');
-            });
-
-            document.getElementById('btn-save-tg').addEventListener('click', async () => {
-                adminSettings.telegramId = document.getElementById('input-tg').value.trim();
-                await saveSettingsToDB();
-                document.getElementById('view-telegram-id').classList.remove('hidden');
-                document.getElementById('form-telegram-id').classList.add('hidden');
-                showNotification('Telegram ID actualizado.');
-            });
-
-            // Panel de Control Supremo Admin: Editar Pozo Global
-            document.getElementById('btn-edit-pool').addEventListener('click', () => {
-                document.getElementById('btn-edit-pool').classList.add('hidden');
-                document.getElementById('form-edit-pool').classList.remove('hidden');
-                document.getElementById('input-pool').value = adminSettings.globalPool || '1.5T';
-            });
-
-            document.getElementById('btn-cancel-pool').addEventListener('click', () => {
-                document.getElementById('btn-edit-pool').classList.remove('hidden');
-                document.getElementById('form-edit-pool').classList.add('hidden');
-            });
-
-            document.getElementById('btn-save-pool').addEventListener('click', async () => {
-                adminSettings.globalPool = document.getElementById('input-pool').value.trim();
-                await saveSettingsToDB();
-                document.getElementById('btn-edit-pool').classList.remove('hidden');
-                document.getElementById('form-edit-pool').classList.add('hidden');
-                showNotification('Pozo Global actualizado con éxito.');
-            });
-
-            // Modificar Perfil de Usuario Modal - Clics
-            document.getElementById('btn-cancel-edit-user').addEventListener('click', () => {
-                document.getElementById('modal-edit-user').classList.add('hidden');
-            });
-
-            document.getElementById('btn-save-edit-user').addEventListener('click', async () => {
-                const origUser = document.getElementById('edit-orig-user').value;
-                const newUsername = document.getElementById('edit-username').value.trim();
-                const newPass = document.getElementById('edit-password').value;
-                const newLvl = parseInt(document.getElementById('edit-level').value) || 1;
-                const newBal = parseInt(document.getElementById('edit-balance').value) || 0;
-
-                const matchedUser = users.find(u => u.username.toLowerCase() === origUser.toLowerCase());
-                if (matchedUser) {
-                    if (origUser.toLowerCase() !== newUsername.toLowerCase()) {
-                        await deleteUserFromDB(origUser);
-                    }
-                    
-                    const updatedObj = {
-                        ...matchedUser,
-                        username: newUsername,
-                        password: newPass,
-                        level: newLvl,
-                        balance: newBal
-                    };
-                    await saveUserToDB(updatedObj);
-                    document.getElementById('modal-edit-user').classList.add('hidden');
-                    showNotification('Operativo guardado con éxito.');
-                }
-            });
-
-            // Eventos de barra de navegación principal
-            document.querySelectorAll('.nav-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    sounds.click();
-                    showTab(btn.dataset.tab);
-                });
-            });
-        });
     </script>
 </body>
 </html>

@@ -2,453 +2,1096 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>💀 Buscaminas - Juego de Minas</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Danger Mines - Operación de Élite</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- HTML2Canvas para capturas -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Arial', sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            background: linear-gradient(135deg, #1a1a1a 0%, #2d0000 100%);
-            color: #fff;
-        }
-
-        .container {
-            background: linear-gradient(135deg, #1a1a1a 0%, #2d1a1a 100%);
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(255, 0, 0, 0.3), inset 0 0 30px rgba(0, 0, 0, 0.8);
-            padding: 30px;
-            max-width: 650px;
-            width: 90%;
-            border: 3px solid #8b0000;
-        }
-
-        .header {
-            text-align: center;
-            margin-bottom: 25px;
-        }
-
-        .skull-logo {
-            font-size: 4em;
-            margin-bottom: 10px;
-            display: block;
-            text-shadow: 0 0 20px rgba(255, 0, 0, 0.5);
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { text-shadow: 0 0 20px rgba(255, 0, 0, 0.5); }
-            50% { text-shadow: 0 0 40px rgba(255, 0, 0, 0.8); }
-        }
-
-        h1 {
-            text-align: center;
-            color: #ff4444;
-            margin-bottom: 5px;
-            font-size: 2.5em;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
-        }
-
-        .subtitle {
-            text-align: center;
-            color: #cc6666;
-            margin-bottom: 25px;
-            font-size: 1em;
-        }
-
-        .controls {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin-bottom: 25px;
-        }
-
-        .control-group {
-            display: flex;
-            flex-direction: column;
-        }
-
-        label {
-            font-weight: bold;
-            color: #ff6666;
-            margin-bottom: 5px;
-            font-size: 0.9em;
-            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
-        }
-
-        select, input {
-            padding: 10px;
-            border: 2px solid #8b0000;
-            border-radius: 8px;
-            font-size: 0.95em;
-            background: #2a2a2a;
-            color: #fff;
-            transition: all 0.3s;
-        }
-
-        select:focus, input:focus {
-            outline: none;
-            border-color: #ff4444;
-            box-shadow: 0 0 10px rgba(255, 68, 68, 0.5);
-            background: #333;
-        }
-
-        .difficulty-buttons {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-
-        .difficulty-btn {
-            padding: 12px;
-            border: 2px solid #8b0000;
-            background: #2a2a2a;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: all 0.3s;
-            color: #ff6666;
-            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
-        }
-
-        .difficulty-btn:hover {
-            border-color: #ff4444;
-            background: #3a2a2a;
-            box-shadow: 0 0 10px rgba(255, 68, 68, 0.3);
-        }
-
-        .difficulty-btn.active {
-            background: #8b0000;
-            color: #ffcccc;
-            border-color: #ff4444;
-            box-shadow: 0 0 15px rgba(255, 68, 68, 0.5);
-        }
-
-        .game-info {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-            margin-bottom: 20px;
-            text-align: center;
-        }
-
-        .info-box {
-            background: #2a1a1a;
-            padding: 15px;
-            border-radius: 8px;
-            border-left: 4px solid #ff4444;
-            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
-        }
-
-        .info-box p {
-            font-size: 0.85em;
-            color: #ff6666;
-            margin-bottom: 5px;
-        }
-
-        .info-box span {
-            font-size: 1.5em;
-            font-weight: bold;
-            color: #ff4444;
-            text-shadow: 0 0 10px rgba(255, 68, 68, 0.3);
-        }
-
-        .buttons {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-bottom: 25px;
-        }
-
-        button {
-            padding: 12px 20px;
-            border: none;
-            border-radius: 8px;
-            font-weight: bold;
-            cursor: pointer;
-            font-size: 1em;
-            transition: all 0.3s;
-        }
-
-        .btn-start {
-            background: linear-gradient(135deg, #8b0000 0%, #ff4444 100%);
-            color: white;
-            grid-column: span 2;
-            border: 2px solid #ff4444;
-            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
-        }
-
-        .btn-start:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(255, 68, 68, 0.5);
-        }
-
-        .btn-reset {
-            background: #8b0000;
-            color: #ffcccc;
-            border: 2px solid #ff4444;
-        }
-
-        .btn-reset:hover {
-            background: #ff4444;
-            color: #000;
-        }
-
-        .board-container {
-            display: flex;
-            justify-content: center;
-            margin-bottom: 20px;
-        }
-
-        .board {
-            display: inline-grid;
-            gap: 2px;
-            padding: 10px;
-            background: #000;
-            border-radius: 8px;
-            border: 3px solid #8b0000;
-        }
-
-        .cell {
-            width: 40px;
-            height: 40px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: bold;
-            font-size: 1.1em;
-            background: #3a3a3a;
-            transition: all 0.2s;
-            user-select: none;
-            border: 1px solid #555;
-        }
-
-        .cell:hover:not(.revealed):not(.flagged) {
-            background: #4a4a4a;
-            transform: scale(1.05);
-            box-shadow: 0 0 10px rgba(255, 68, 68, 0.3);
-        }
-
-        .cell.revealed {
-            background: #2a2a2a;
-            cursor: default;
-            color: #fff;
-            border: 1px solid #444;
-        }
-
-        .cell.mine {
-            background: linear-gradient(135deg, #ff4444 0%, #8b0000 100%);
-            color: #fff;
-            font-size: 1.3em;
-            box-shadow: 0 0 10px rgba(255, 68, 68, 0.5);
-        }
-
-        .cell.flagged {
-            background: #cc6600;
-            color: #fff;
-            font-size: 1.2em;
-            border: 1px solid #ff8800;
-        }
-
-        .cell.empty {
-            color: transparent;
-        }
-
-        .cell.one { color: #4488ff; }
-        .cell.two { color: #44ff44; }
-        .cell.three { color: #ff4444; }
-        .cell.four { color: #4444ff; }
-        .cell.five { color: #ff4444; }
-        .cell.six { color: #44ffff; }
-        .cell.seven { color: #ffff44; }
-        .cell.eight { color: #ff8844; }
-
-        .message {
-            text-align: center;
-            font-size: 1.3em;
-            font-weight: bold;
-            margin-bottom: 15px;
-            padding: 15px;
-            border-radius: 8px;
-            min-height: 30px;
-            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
-        }
-
-        .message.win {
-            background: #1a3a1a;
-            color: #44ff44;
-            border: 2px solid #44ff44;
-            box-shadow: 0 0 20px rgba(68, 255, 68, 0.3);
-        }
-
-        .message.lose {
-            background: #3a1a1a;
-            color: #ff4444;
-            border: 2px solid #ff4444;
-            box-shadow: 0 0 20px rgba(255, 68, 68, 0.3);
-        }
-
-        .leaderboard {
-            background: #1a1a1a;
-            border: 2px solid #8b0000;
-            border-radius: 8px;
-            padding: 15px;
-            margin-top: 20px;
-            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.8);
-        }
-
-        .leaderboard h3 {
-            color: #ff4444;
-            margin-bottom: 15px;
-            text-align: center;
-            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
-        }
-
-        .leaderboard-list {
-            list-style: none;
-        }
-
-        .leaderboard-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 10px;
-            border-bottom: 1px solid #3a2a2a;
-            font-size: 0.95em;
-            color: #cc6666;
-        }
-
-        .leaderboard-item:last-child {
-            border-bottom: none;
-        }
-
-        .rank {
-            font-weight: bold;
-            color: #ff6666;
-            min-width: 30px;
-        }
-
-        .rank.gold { color: #ffcc44; text-shadow: 0 0 10px rgba(255, 204, 68, 0.5); }
-        .rank.silver { color: #cccccc; text-shadow: 0 0 10px rgba(204, 204, 204, 0.5); }
-        .rank.bronze { color: #ff8844; text-shadow: 0 0 10px rgba(255, 136, 68, 0.5); }
-
-        .time {
-            color: #ff6666;
-            font-weight: bold;
-        }
-
-        .difficulty-label {
-            font-size: 0.85em;
-            color: #999;
-            margin-top: 3px;
-        }
-
-        @media (max-width: 600px) {
-            .container {
-                padding: 20px;
-            }
-
-            h1 {
-                font-size: 2em;
-            }
-
-            .skull-logo {
-                font-size: 3em;
-            }
-
-            .controls {
-                grid-template-columns: 1fr;
-            }
-
-            .cell {
-                width: 35px;
-                height: 35px;
-                font-size: 0.9em;
-            }
-
-            .difficulty-buttons {
-                grid-template-columns: 1fr;
-            }
-        }
+        .pb-safe { padding-bottom: calc(env(safe-area-inset-bottom) + 0.5rem); }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+        body { -webkit-tap-highlight-color: transparent; }
+        /* Evitar zoom en inputs en iOS */
+        input { font-size: 16px !important; }
     </style>
 </head>
-<body>
-    <div class="container">
-        <div class="header">
-            <span class="skull-logo">💀</span>
-            <h1>BUSCAMINAS</h1>
-            <p class="subtitle">¡Encuentra todas las minas sin pisar ninguna!</p>
-        </div>
+<body class="bg-neutral-950 text-neutral-200 font-sans selection:bg-red-900 overflow-x-hidden min-h-screen flex flex-col">
 
-        <div class="controls">
-            <div class="control-group">
-                <label for="rows">Filas:</label>
-                <input type="number" id="rows" min="5" max="20" value="10">
-            </div>
-            <div class="control-group">
-                <label for="cols">Columnas:</label>
-                <input type="number" id="cols" min="5" max="20" value="10">
-            </div>
-            <div class="control-group">
-                <label for="mines">Minas:</label>
-                <input type="number" id="mines" min="1" max="300" value="10">
-            </div>
-            <div class="control-group">
-                <label for="playerName">Tu nombre:</label>
-                <input type="text" id="playerName" placeholder="Ingresa tu nombre">
-            </div>
-        </div>
-
-        <div class="difficulty-buttons">
-            <button class="difficulty-btn" onclick="setDifficulty('easy')">🟢 Fácil</button>
-            <button class="difficulty-btn" onclick="setDifficulty('medium')">🟡 Medio</button>
-            <button class="difficulty-btn" onclick="setDifficulty('hard')">🔴 Difícil</button>
-        </div>
-
-        <div class="game-info">
-            <div class="info-box">
-                <p>Minas restantes</p>
-                <span id="minesLeft">0</span>
-            </div>
-            <div class="info-box">
-                <p>Tiempo</p>
-                <span id="timer">0:00</span>
-            </div>
-            <div class="info-box">
-                <p>Celdas reveladas</p>
-                <span id="revealed">0</span>
-            </div>
-        </div>
-
-        <div class="buttons">
-            <button class="btn-start" onclick="startGame()">🎮 Nuevo Juego</button>
-            <button class="btn-reset" onclick="resetScores()">🗑️ Limpiar</button>
-        </div>
-
-        <div id="message" class="message"></div>
-
-        <div class="board-container">
-            <div id="board" class="board"></div>
-        </div>
-
-        <div class="leaderboard">
-            <h3>💀 Top 10 Mejores Puntuaciones</h3>
-            <ul class="leaderboard-list" id="leaderboardList">
-                <li class="leaderboard-item">
-                    <span>No hay puntuaciones aún</span>
-                </li>
-            </ul>
+    <!-- Notificaciones Flotantes -->
+    <div id="notification-container" class="fixed top-16 left-1/2 transform -translate-x-1/2 z-[100] hidden">
+        <div id="notification-msg" class="bg-white text-black px-5 py-2.5 rounded-full font-black text-[10px] shadow-[0_0_20px_rgba(255,255,255,0.3)] animate-bounce tracking-widest text-center uppercase whitespace-nowrap">
+            Mensaje
         </div>
     </div>
 
-    <script src="game.js"></script>
+    <div id="notification-bottom" class="fixed bottom-10 left-1/2 transform -translate-x-1/2 z-[100] hidden">
+        <div id="notification-msg-bottom" class="bg-red-600 text-white px-6 py-3 rounded-xl font-black tracking-wider shadow-[0_0_20px_rgba(220,38,38,0.5)] text-center text-[10px] uppercase animate-bounce">
+            Mensaje
+        </div>
+    </div>
+
+    <!-- PANTALLA DE CARGA -->
+    <div id="loading-screen" class="min-h-screen bg-neutral-950 flex flex-col justify-center items-center text-red-600 gap-4 fixed inset-0 z-50">
+        <i data-lucide="bomb" class="w-16 h-16 animate-pulse"></i>
+        <span class="font-mono text-xs tracking-widest uppercase">Estableciendo Enlace...</span>
+    </div>
+
+    <!-- PANTALLA DE AUTENTICACIÓN -->
+    <div id="auth-screen" class="min-h-screen bg-neutral-950 text-neutral-200 flex flex-col items-center justify-center p-4 hidden w-full">
+        <div class="w-full max-w-md bg-neutral-900 border border-neutral-800 rounded-3xl p-8 shadow-[0_0_60px_rgba(220,38,38,0.15)] relative overflow-hidden">
+            <div class="absolute -top-24 -right-24 w-56 h-56 bg-red-600 rounded-full blur-[120px] opacity-20 pointer-events-none"></div>
+            
+            <div class="text-center mb-10 relative z-10">
+                <div class="inline-block p-4 bg-neutral-950 rounded-2xl border border-neutral-800 shadow-inner mb-6 relative">
+                   <div class="absolute inset-0 border border-red-500/30 rounded-2xl animate-ping opacity-20"></div>
+                   <i data-lucide="bomb" class="w-12 h-12 text-red-500 drop-shadow-[0_0_15px_rgba(239,68,68,0.6)]"></i>
+                </div>
+                <h1 class="text-4xl font-black italic tracking-widest uppercase text-transparent bg-clip-text bg-gradient-to-r from-red-500 via-red-400 to-white">
+                  Danger <span class="text-red-600 drop-shadow-[0_0_10px_rgba(220,38,38,0.5)]">Mines</span>
+                </h1>
+                <p class="text-neutral-500 text-[10px] mt-2 uppercase tracking-[0.3em] font-black">Operación de Élite</p>
+            </div>
+
+            <form id="auth-form" class="space-y-4 relative z-10">
+                <div class="space-y-1">
+                   <label class="text-[10px] font-black uppercase text-neutral-500 tracking-wider">Identificador (Usuario)</label>
+                   <input type="text" id="auth-username" class="w-full bg-neutral-950/50 border border-neutral-800 rounded-xl py-3.5 px-4 text-white font-bold outline-none focus:border-red-500 transition-all placeholder:text-neutral-700" placeholder="Ej: Drake Cora" />
+                </div>
+                <div class="space-y-1 relative">
+                   <label class="text-[10px] font-black uppercase text-neutral-500 tracking-wider">Código de Seguridad (Contraseña)</label>
+                   <div class="relative">
+                     <input type="password" id="auth-password" class="w-full bg-neutral-950/50 border border-neutral-800 rounded-xl py-3.5 px-4 text-white font-bold outline-none focus:border-red-500 transition-all placeholder:text-neutral-700 pr-12" placeholder="••••••••" />
+                     <button type="button" id="toggle-password" class="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-white transition-colors">
+                       <i data-lucide="eye" id="eye-icon" class="w-[18px] h-[18px]"></i>
+                     </button>
+                   </div>
+                </div>
+
+                <div class="flex items-center gap-2 pt-2 cursor-pointer" id="toggle-remember">
+                  <div id="remember-box" class="w-4 h-4 rounded border flex items-center justify-center transition-colors bg-red-600 border-red-500 text-white">
+                    <i data-lucide="check" id="remember-check" class="w-3 h-3 stroke-[4px]"></i>
+                  </div>
+                  <span class="text-[10px] font-black uppercase tracking-wider text-neutral-400">Recordar Sesión Permanente</span>
+                </div>
+
+                <button type="submit" id="auth-submit-btn" class="w-full bg-red-600 hover:bg-red-500 text-white font-black uppercase tracking-widest py-4 rounded-xl shadow-[0_0_20px_rgba(220,38,38,0.3)] transition-all flex justify-center items-center gap-2 mt-8 text-sm active:scale-95">
+                  <i data-lucide="log-in" id="auth-btn-icon" class="w-[18px] h-[18px]"></i> <span id="auth-btn-text">Iniciar Secuencia</span>
+                </button>
+            </form>
+
+            <button id="auth-switch-btn" class="w-full text-center mt-6 text-[11px] text-neutral-400 hover:text-red-400 transition-colors uppercase font-black tracking-wider underline underline-offset-4 relative z-10">
+                ¿Nuevo Recluta? Iniciar Enlace
+            </button>
+        </div>
+    </div>
+
+    <!-- PANTALLA PRINCIPAL DE LA APP -->
+    <div id="app-screen" class="hidden flex-col min-h-screen pb-24 w-full">
+        <!-- HEADER TÁCTICO -->
+        <header class="sticky top-0 z-40 bg-neutral-950/95 backdrop-blur-md border-b border-neutral-900 px-4 py-3 shadow-2xl flex justify-between items-center w-full">
+            <div class="flex items-center gap-3">
+              <button id="btn-logout" class="text-neutral-500 hover:text-red-500 transition-colors" title="Cerrar Sesión"><i data-lucide="power" class="w-[18px] h-[18px]"></i></button>
+              <div class="flex flex-col">
+                <h1 class="text-[13px] font-black italic tracking-widest uppercase text-white leading-none">Danger <span class="text-red-600">Mines</span></h1>
+                <span class="text-[9px] text-neutral-500 font-black uppercase tracking-[0.2em] mt-0.5">Agente: <span id="header-username" class="text-red-500">---</span></span>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <span id="badge-local" class="hidden text-[8px] bg-yellow-600/20 text-yellow-500 px-1.5 py-0.5 rounded uppercase font-black tracking-wider">Local</span>
+              <button id="btn-copy-link" class="p-1.5 rounded-lg bg-neutral-900 border border-neutral-800 text-neutral-400 hover:text-white transition-colors" title="Copiar Enlace Nube">
+                <i data-lucide="link-2" class="w-3.5 h-3.5"></i>
+              </button>
+              <button id="btn-mute" class="p-1.5 rounded-lg bg-neutral-900 border border-neutral-800 text-neutral-400 hover:text-white transition-colors">
+                <i data-lucide="volume-2" id="mute-icon" class="w-3.5 h-3.5"></i>
+              </button>
+              <div id="header-balance-container" class="flex items-center gap-1.5 bg-neutral-900 px-2.5 py-1.5 rounded-lg border border-neutral-800 transition-colors">
+                <i data-lucide="star" class="w-3 h-3 text-yellow-500 fill-yellow-500"></i>
+                <span id="header-balance" class="font-black text-[11px] transition-all text-yellow-400">0 PTS</span>
+              </div>
+            </div>
+        </header>
+
+        <main class="flex-1 p-4 flex flex-col items-center w-full">
+            
+            <!-- TABS -->
+            <!-- JUEGO -->
+            <div id="tab-game" class="flex-1 flex flex-col w-full max-w-2xl">
+                <div class="bg-neutral-900 border border-neutral-800 rounded-2xl p-4 mb-4 shadow-xl relative overflow-hidden">
+                  <div class="absolute right-0 top-0 w-32 h-32 bg-red-500/5 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
+                  <div class="flex justify-between items-center mb-4 relative z-10">
+                    <div class="flex items-center gap-2 font-black uppercase tracking-wider text-[12px] text-red-500">
+                      <i data-lucide="shield-alert" class="w-4 h-4"></i>
+                      <span id="game-level">Nivel 1</span>
+                    </div>
+                    <div class="flex bg-neutral-950 border border-neutral-800 rounded-lg overflow-hidden font-mono text-sm">
+                       <div class="flex items-center gap-1.5 px-3 py-1.5 bg-neutral-900 border-r border-neutral-800 text-red-400">
+                          <i data-lucide="bomb" class="w-3.5 h-3.5"></i> <span id="game-mines-left">0</span>
+                       </div>
+                       <div id="game-session-points" class="flex items-center gap-1.5 px-3 py-1.5 border-r border-neutral-800 font-black text-neutral-500">
+                          +0
+                       </div>
+                       <div class="flex items-center gap-1.5 px-3 py-1.5 text-neutral-400">
+                          <i data-lucide="timer" id="game-timer-icon" class="w-3.5 h-3.5"></i> <span id="game-time">0</span>
+                       </div>
+                    </div>
+                  </div>
+    
+                  <div id="game-controls-idle" class="relative z-10">
+                      <button id="btn-start-game" class="w-full text-white font-black uppercase tracking-widest py-3.5 rounded-xl shadow-lg transition-all flex justify-center items-center gap-2 text-xs bg-red-600 hover:brightness-110 active:scale-[0.98]">
+                        <i data-lucide="play" class="w-4 h-4 fill-current"></i> Iniciar Operación
+                      </button>
+                  </div>
+
+                  <div id="game-controls-playing" class="hidden gap-2 relative z-10">
+                    <button id="btn-abort" class="w-1/3 bg-neutral-950 text-red-500 border border-red-900/50 py-3 rounded-xl font-black text-[10px] tracking-widest uppercase hover:bg-red-950/50 transition-colors active:scale-[0.98]">
+                      Abortar
+                    </button>
+                    <div class="w-2/3 flex gap-1.5">
+                      <button id="btn-mode-dig" class="flex-1 rounded-xl font-black text-[10px] uppercase tracking-wider flex justify-center items-center gap-1.5 transition-all bg-red-600 text-white shadow-inner">
+                        <i data-lucide="target" class="w-3.5 h-3.5"></i> Cavar
+                      </button>
+                      <button id="btn-mode-flag" class="flex-1 rounded-xl font-black text-[10px] uppercase tracking-wider flex justify-center items-center gap-1.5 transition-all bg-neutral-950 text-neutral-500 border border-neutral-800">
+                        <i data-lucide="flag" class="w-3.5 h-3.5"></i> Bandera
+                      </button>
+                    </div>
+                  </div>
+
+                  <div id="game-controls-ended" class="hidden relative z-10">
+                      <button id="btn-next-try" class="w-full bg-neutral-950 hover:bg-neutral-800 border border-neutral-700 text-white font-black uppercase tracking-widest py-3.5 rounded-xl transition-all flex justify-center items-center gap-2 text-xs active:scale-[0.98]">
+                        <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Siguiente Intento
+                      </button>
+                  </div>
+                </div>
+    
+                <div id="capture-zone" class="relative p-2 rounded-2xl bg-neutral-950 border border-neutral-800 shadow-2xl flex-1 flex flex-col min-h-[400px] overflow-hidden select-none">
+                  <div class="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:14px_14px] pointer-events-none"></div>
+    
+                  <!-- Overlay Resultado -->
+                  <div id="result-overlay" class="hidden absolute inset-0 z-30 flex flex-col items-center justify-center bg-neutral-950/90 backdrop-blur-sm rounded-2xl p-4">
+                    <div class="text-center transform animate-[bounce_0.5s_ease-out] mb-6">
+                      <div id="result-icon-container" class="relative">
+                          <!-- Generado por JS -->
+                      </div>
+                      <h2 id="result-title" class="text-2xl font-black uppercase tracking-widest text-white">Resultado</h2>
+                      <p id="result-points" class="font-black text-xl mt-1 bg-neutral-900 inline-block px-4 py-1 rounded-full border text-white border-neutral-900/50">0 PTS</p>
+                      <p id="result-detail" class="text-xs mt-2 font-black tracking-widest uppercase"></p>
+                    </div>
+                    <button id="btn-share" class="bg-white hover:bg-neutral-200 text-black font-black uppercase text-[10px] tracking-[0.2em] py-3 px-8 rounded-full flex items-center gap-2 shadow-[0_0_20px_rgba(255,255,255,0.4)] transition-all active:scale-95">
+                      <i data-lucide="share-2" class="w-4 h-4"></i> Capturar Pantalla
+                    </button>
+                  </div>
+    
+                  <!-- Tablero -->
+                  <div class="flex-1 w-full h-full p-1 relative z-20 overflow-auto scrollbar-hide flex items-center justify-center">
+                    <div id="mines-grid" class="grid gap-[2px] bg-neutral-900 p-1.5 rounded-xl border border-neutral-800 shadow-inner inline-grid max-w-full">
+                        <!-- Generado por JS -->
+                    </div>
+                    <div id="mines-standby" class="text-neutral-600/50 text-center flex flex-col items-center gap-3">
+                        <i data-lucide="bomb" class="w-12 h-12 mx-auto animate-pulse text-neutral-800"></i>
+                        <p class="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-700">En Espera</p>
+                     </div>
+                  </div>
+                  
+                  <div id="capture-watermark" class="hidden absolute bottom-4 left-0 right-0 text-center z-50">
+                    <p class="font-black italic uppercase tracking-widest text-[10px] bg-neutral-950/90 py-2 px-5 border border-neutral-800 rounded-full inline-flex items-center gap-2 shadow-2xl text-red-500">
+                      <i data-lucide="shield-alert" class="w-3 h-3"></i> Agente: <span id="wm-username"></span> | Nivel: <span id="wm-level"></span>
+                    </p>
+                  </div>
+                </div>
+            </div>
+
+            <!-- HISTORIAL -->
+            <div id="tab-history" class="hidden space-y-4 w-full max-w-md mx-auto">
+                <h2 class="text-sm font-black flex items-center gap-2 uppercase tracking-widest border-l-4 border-neutral-600 pl-3 mb-6 text-neutral-300">
+                  <i data-lucide="history" class="w-4 h-4 text-neutral-500"></i> Expedientes
+                </h2>
+                <div id="history-container" class="space-y-3">
+                    <!-- Generado por JS -->
+                </div>
+            </div>
+
+            <!-- RANKING -->
+            <div id="tab-ranking" class="hidden space-y-4 w-full max-w-md mx-auto pb-6">
+                <div class="bg-gradient-to-b from-red-950/80 to-neutral-950 border-2 border-red-500/40 rounded-3xl p-8 mb-8 shadow-[0_10px_40px_rgba(220,38,38,0.2)] flex flex-col items-center justify-center text-center relative overflow-hidden group">
+                  <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-red-500/10 via-transparent to-transparent animate-pulse pointer-events-none"></div>
+                  <div class="relative">
+                     <i data-lucide="coins" class="w-14 h-14 text-red-500 mb-3 drop-shadow-[0_0_20px_rgba(239,68,68,0.8)] transform group-hover:scale-110 transition-transform duration-500"></i>
+                     <div class="absolute inset-0 bg-red-500 blur-xl opacity-20 group-hover:opacity-40 transition-opacity rounded-full"></div>
+                  </div>
+                  <p class="text-[10px] font-black text-red-500 uppercase tracking-[0.5em] mb-2 drop-shadow-md">Pozo de Élite</p>
+                  <h2 class="text-5xl sm:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-b from-white via-red-100 to-red-500 drop-shadow-[0_0_15px_rgba(220,38,38,0.6)] mb-3 leading-none tracking-tighter">
+                    <span id="prize-pool-display">1.5T</span> <span class="text-2xl sm:text-3xl text-red-500 tracking-normal">FC</span>
+                  </h2>
+                  
+                  <div id="admin-pool-edit" class="hidden mb-4 relative z-10 w-full max-w-[200px]">
+                      <button id="btn-edit-pool" class="text-[9px] w-full bg-red-950/50 border border-red-500/30 text-red-400 py-2 rounded-full uppercase tracking-widest font-black hover:bg-red-900/80 hover:text-white hover:border-red-500 transition-all flex items-center justify-center gap-1.5 shadow-[0_0_15px_rgba(220,38,38,0.2)]">
+                        <i data-lucide="edit-3" class="w-3 h-3"></i> Modificar Pozo Global
+                      </button>
+                      <div id="form-edit-pool" class="hidden flex w-full gap-2 bg-neutral-950/80 p-1 rounded-lg border border-red-500/50">
+                        <input type="text" id="input-pool" class="flex-1 bg-transparent text-white text-xs text-center font-bold outline-none placeholder:text-neutral-600" placeholder="Ej: 5.0T">
+                        <button id="btn-save-pool" class="bg-red-600 text-white p-1.5 rounded hover:bg-red-500 transition-colors"><i data-lucide="check" class="w-3.5 h-3.5"></i></button>
+                        <button id="btn-cancel-pool" class="bg-neutral-800 text-white p-1.5 rounded hover:bg-neutral-700 transition-colors"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>
+                      </div>
+                  </div>
+                  
+                  <div class="bg-red-950/90 px-5 py-2.5 rounded-full border border-red-500/30 backdrop-blur-md shadow-[inset_0_0_10px_rgba(239,68,68,0.1)]">
+                    <p class="text-[9px] font-black text-red-200 uppercase tracking-[0.2em] flex items-center gap-2">
+                      <i data-lucide="trophy" class="w-3 h-3 text-yellow-400"></i> Top 10 se reparten el botín
+                    </p>
+                  </div>
+                </div>
+    
+                <h3 class="text-[11px] font-black uppercase tracking-widest text-neutral-500 mb-3 pl-3 border-l-2 border-neutral-700 flex items-center gap-2">
+                  <i data-lucide="crown" class="w-3.5 h-3.5"></i> Clasificación Global
+                </h3>
+    
+                <div id="ranking-container" class="bg-neutral-900 border border-neutral-800 rounded-2xl overflow-hidden shadow-2xl">
+                     <!-- Generado por JS -->
+                </div>
+            </div>
+
+            <!-- PANEL DE CONTROL (DRAKE CORA) -->
+            <div id="tab-panel" class="hidden space-y-6 w-full max-w-lg mx-auto pb-12">
+                <h2 class="text-sm font-black flex items-center gap-2 uppercase tracking-widest border-l-4 border-red-600 pl-3 mb-6 text-white">
+                  <i data-lucide="shield-alert" class="w-4 h-4 text-red-500"></i> Centro de Mando Supremo
+                </h2>
+    
+                <div class="bg-neutral-900 border border-neutral-800 rounded-2xl p-4 shadow-xl">
+                   <h3 class="text-[11px] font-black uppercase tracking-wider text-neutral-400 mb-3 flex items-center gap-1.5">
+                      <i data-lucide="message-square" class="w-3.5 h-3.5 text-red-500"></i> Notificaciones a Telegram
+                   </h3>
+                   <div id="view-telegram-id" class="flex justify-between items-center bg-neutral-950 border border-neutral-800/60 rounded-xl p-3">
+                       <div>
+                         <p class="text-[9px] text-neutral-500 uppercase font-bold">Chat ID Destino</p>
+                         <p id="display-telegram-id" class="text-xs font-mono text-neutral-300 font-bold mt-0.5">Sin Configurar</p>
+                       </div>
+                       <button id="btn-edit-tg" class="bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 p-2 rounded-lg text-red-500 hover:text-white transition-colors">
+                         <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+                       </button>
+                   </div>
+                   <div id="form-telegram-id" class="hidden flex gap-2">
+                       <input type="text" id="input-tg" class="flex-1 bg-neutral-950 border border-neutral-800 rounded-lg px-3 py-2 text-xs font-mono text-white outline-none focus:border-red-500" placeholder="Ej: -100123456789" />
+                       <button id="btn-save-tg" class="bg-red-600 p-2 rounded-lg text-white font-black hover:bg-red-500"><i data-lucide="check" class="w-3.5 h-3.5"></i></button>
+                       <button id="btn-cancel-tg" class="bg-neutral-800 p-2 rounded-lg text-white font-black hover:bg-neutral-700"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>
+                   </div>
+                </div>
+    
+                <div class="bg-neutral-900 border border-neutral-800 rounded-2xl p-4 shadow-xl">
+                   <h3 class="text-[11px] font-black uppercase tracking-wider text-neutral-400 mb-4">Registro Completo de Agentes</h3>
+                   <div id="admin-users-list" class="space-y-3 max-h-[400px] overflow-y-auto pr-1">
+                      <!-- Generado por JS -->
+                   </div>
+                </div>
+            </div>
+
+        </main>
+
+        <!-- NAV INFERIOR -->
+        <nav class="fixed bottom-0 w-full bg-neutral-950/90 backdrop-blur-md border-t border-neutral-900 flex justify-around items-center py-2.5 pb-safe z-40 shadow-[0_-5px_20px_rgba(0,0,0,0.5)]">
+            <button data-tab="game" class="nav-btn flex flex-col items-center p-2 w-20 transition-colors text-white">
+              <i data-lucide="target" class="w-5 h-5 text-red-500 icon-active"></i>
+              <span class="text-[8px] font-black mt-1.5 uppercase tracking-widest">Operación</span>
+            </button>
+            <button data-tab="ranking" class="nav-btn flex flex-col items-center p-2 w-20 transition-colors text-neutral-600 hover:text-neutral-400">
+              <i data-lucide="crown" class="w-5 h-5 icon-active"></i>
+              <span class="text-[8px] font-black mt-1.5 uppercase tracking-widest">Ranking</span>
+            </button>
+            <button data-tab="panel" id="nav-panel" class="hidden nav-btn flex flex-col items-center p-2 w-20 transition-colors text-neutral-600 hover:text-neutral-400">
+              <i data-lucide="shield-alert" class="w-5 h-5 icon-active"></i>
+              <span class="text-[8px] font-black mt-1.5 uppercase tracking-widest">Panel</span>
+            </button>
+            <button data-tab="history" class="nav-btn flex flex-col items-center p-2 w-20 transition-colors text-neutral-600 hover:text-neutral-400">
+              <i data-lucide="history" class="w-5 h-5 icon-active"></i>
+              <span class="text-[8px] font-black mt-1.5 uppercase tracking-widest">Registros</span>
+            </button>
+        </nav>
+    </div>
+
+    <!-- MODAL EDICIÓN USUARIO -->
+    <div id="modal-edit-user" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div class="bg-neutral-900 border border-neutral-800 w-full max-w-md rounded-2xl p-6 shadow-2xl relative">
+             <h3 class="text-sm font-black text-white uppercase tracking-widest mb-4 flex items-center gap-2">
+                <i data-lucide="shield-alert" class="w-4 h-4 text-red-500"></i> Modificar Perfil del Agente
+             </h3>
+             <div class="space-y-4">
+                <input type="hidden" id="edit-orig-user">
+                <div>
+                  <label class="text-[10px] uppercase tracking-wider font-black text-neutral-500 block mb-1">Nombre del Operativo (Alias)</label>
+                  <input type="text" id="edit-username" class="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2 text-xs font-bold text-white outline-none" />
+                </div>
+                <div>
+                  <label class="text-[10px] uppercase tracking-wider font-black text-neutral-500 block mb-1">Código de Seguridad (Contraseña)</label>
+                  <input type="text" id="edit-password" class="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2 text-xs font-bold text-white outline-none" />
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                  <div>
+                    <label class="text-[10px] uppercase tracking-wider font-black text-neutral-500 block mb-1">Nivel Táctico</label>
+                    <input type="number" id="edit-level" class="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2 text-xs font-bold text-white outline-none" />
+                  </div>
+                  <div>
+                    <label class="text-[10px] uppercase tracking-wider font-black text-neutral-500 block mb-1">Puntos (Balance)</label>
+                    <input type="number" id="edit-balance" class="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2 text-xs font-bold text-white outline-none" />
+                  </div>
+                </div>
+             </div>
+             <div class="flex gap-2.5 mt-6">
+                <button id="btn-cancel-edit-user" class="flex-1 py-2.5 rounded-xl bg-neutral-950 border border-neutral-800 text-neutral-500 hover:text-white text-xs font-black uppercase tracking-wider">Cancelar</button>
+                <button id="btn-save-edit-user" class="flex-1 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-black uppercase tracking-wider">Guardar</button>
+             </div>
+        </div>
+    </div>
+
+    <!-- SCRIPT PRINCIPAL TIPO MODULE -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
+        import { getFirestore, collection, doc, setDoc, getDoc, onSnapshot, addDoc, updateDoc, deleteDoc } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
+
+        // --- INICIALIZACIÓN ---
+        lucide.createIcons();
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'danger-mines-global-elite';
+
+        let app = null, auth = null, db = null, useFirebase = false;
+        try {
+            if (firebaseConfig && firebaseConfig.apiKey) {
+                app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+                useFirebase = true;
+                console.log("🔥 Enlace táctico con Firebase establecido.");
+            } else {
+                console.log("ℹ️ Firebase no configurado. Local DB activa.");
+                document.getElementById('badge-local').classList.remove('hidden');
+            }
+        } catch (err) {
+            console.warn("⚠️ Fallo Firebase. Local DB activa.");
+            document.getElementById('badge-local').classList.remove('hidden');
+        }
+
+        // --- CONSTANTES Y ESTADO GLOBAL ---
+        const KEY_PROFILES = `danger_mines_${appId}_profiles`;
+        const KEY_HISTORY = `danger_mines_${appId}_history`;
+        const KEY_SETTINGS = `danger_mines_${appId}_settings`;
+        const KEY_SESSION = `danger_mines_${appId}_session`;
+
+        const PTS_WIN_BONUS = 100;    
+        const PTS_LOSE_PENALTY = -100; 
+        const PTS_PER_REVEAL = 5;      
+        const FUSION_COIN_PRIZES = ["400B", "200B", "100B", "80B", "60B", "50B", "40B", "30B", "20B", "20B"];
+        const NUM_COLORS = ['', 'text-[#3b82f6]', 'text-[#22c55e]', 'text-[#ef4444]', 'text-[#9333ea]', 'text-[#7f1d1d]', 'text-[#14b8a6]', 'text-[#000000]', 'text-[#737373]'];
+        const TELEGRAM_BOT_TOKEN = '8651057630:AAF32WgXsjvWhLP_q5mDhhdksQnkv2m4IE0';
+
+        // Inicialización Local Storage Fallback
+        if (!localStorage.getItem(KEY_PROFILES)) {
+            localStorage.setItem(KEY_PROFILES, JSON.stringify({
+                'drake cora': { username: 'Drake Cora', password: '123', balance: 9999, level: 10, uid: 'master' },
+                'vortex_agente': { username: 'Vortex_Agente', password: '123', balance: 1450, level: 4, uid: 'mock-1' }
+            }));
+        }
+        if (!localStorage.getItem(KEY_HISTORY)) localStorage.setItem(KEY_HISTORY, JSON.stringify([]));
+        if (!localStorage.getItem(KEY_SETTINGS)) localStorage.setItem(KEY_SETTINGS, JSON.stringify({ prizePool: '1.5T', telegramChatId: '' }));
+
+        let state = {
+            user: null, profile: null,
+            authMode: 'login', rememberMe: true, showPassword: false,
+            activeTab: 'game', isMuted: false, globalHistory: [], allProfiles: [],
+            prizePool: '1.5T', telegramChatId: '',
+            gameState: 'idle', sessionTime: 0, sessionPoints: 0, minesBoard: [], flagMode: false, isFirstClick: true,
+            timerInterval: null
+        };
+
+        // --- SISTEMA DE AUDIO ---
+        let audioCtx = null;
+        const initAudio = () => {
+            if (!audioCtx) { const AudioContext = window.AudioContext || window.webkitAudioContext; if (AudioContext) audioCtx = new AudioContext(); }
+            if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+        };
+
+        const playSound = (type) => {
+            if (state.isMuted || !audioCtx) return;
+            try {
+                const ctx = audioCtx; const t = ctx.currentTime;
+                switch(type) {
+                    case 'click': {
+                        const osc = ctx.createOscillator(); const gain = ctx.createGain();
+                        osc.frequency.setValueAtTime(400, t); osc.frequency.exponentialRampToValueAtTime(100, t + 0.1);
+                        gain.gain.setValueAtTime(0.1, t); gain.gain.linearRampToValueAtTime(0.01, t + 0.1);
+                        osc.connect(gain); gain.connect(ctx.destination); osc.start(); osc.stop(t + 0.1); break;
+                    }
+                    case 'blip': {
+                        const osc = ctx.createOscillator(); const gain = ctx.createGain();
+                        osc.type = 'square'; osc.frequency.setValueAtTime(800, t); gain.gain.setValueAtTime(0.05, t);
+                        gain.gain.exponentialRampToValueAtTime(0.01, t + 0.1); osc.connect(gain); gain.connect(ctx.destination); osc.start(); osc.stop(t + 0.1); break;
+                    }
+                    case 'explosion': {
+                        const bufferSize = ctx.sampleRate * 0.5; const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+                        const data = buffer.getChannelData(0); for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+                        const noise = ctx.createBufferSource(); noise.buffer = buffer;
+                        const filter = ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.setValueAtTime(800, t); filter.frequency.exponentialRampToValueAtTime(50, t + 0.4);
+                        const gain = ctx.createGain(); gain.gain.setValueAtTime(0.5, t); gain.gain.exponentialRampToValueAtTime(0.01, t + 0.5);
+                        noise.connect(filter); filter.connect(gain); gain.connect(ctx.destination); noise.start(); break;
+                    }
+                    case 'win': {
+                        const notes = [261.63, 329.63, 392.00, 523.25];
+                        notes.forEach((freq, index) => {
+                            const osc = ctx.createOscillator(); const gain = ctx.createGain();
+                            osc.type = 'sawtooth'; osc.frequency.setValueAtTime(freq, t + index * 0.1);
+                            gain.gain.setValueAtTime(0.1, t + index * 0.1); gain.gain.linearRampToValueAtTime(0.01, t + index * 0.1 + 0.2);
+                            osc.connect(gain); gain.connect(ctx.destination); osc.start(t + index * 0.1); osc.stop(t + index * 0.1 + 0.2);
+                        }); break;
+                    }
+                    case 'start': {
+                        const osc = ctx.createOscillator(); const gain = ctx.createGain();
+                        osc.frequency.setValueAtTime(440, t); osc.frequency.exponentialRampToValueAtTime(880, t + 0.2);
+                        gain.gain.setValueAtTime(0.1, t); gain.gain.linearRampToValueAtTime(0.01, t + 0.2);
+                        osc.connect(gain); gain.connect(ctx.destination); osc.start(); osc.stop(t + 0.2); break;
+                    }
+                }
+            } catch (e) {}
+        };
+
+        // --- BASE DE DATOS (HÍBRIDA) ---
+        const dbGetProfile = async (username) => {
+            const safe = username.trim().toLowerCase();
+            if (useFirebase) { try { const snap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'profiles', safe)); if (snap.exists()) return snap.data(); } catch (e) {} }
+            return JSON.parse(localStorage.getItem(KEY_PROFILES) || '{}')[safe] || null;
+        };
+        const dbSetProfile = async (username, data) => {
+            const safe = username.trim().toLowerCase();
+            if (useFirebase) { try { await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'profiles', safe), data); } catch (e) {} }
+            const profs = JSON.parse(localStorage.getItem(KEY_PROFILES) || '{}'); profs[safe] = data; localStorage.setItem(KEY_PROFILES, JSON.stringify(profs));
+        };
+        const dbDeleteProfile = async (username) => {
+            const safe = username.trim().toLowerCase();
+            if (useFirebase) { try { await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'profiles', safe)); } catch (e) {} }
+            const profs = JSON.parse(localStorage.getItem(KEY_PROFILES) || '{}'); delete profs[safe]; localStorage.setItem(KEY_PROFILES, JSON.stringify(profs));
+        };
+        const dbGetAllProfiles = async () => { return Object.values(JSON.parse(localStorage.getItem(KEY_PROFILES) || '{}')); };
+
+        // --- NOTIFICACIONES ---
+        const showNotification = (msg, bottom = false) => {
+            const el = bottom ? document.getElementById('notification-bottom') : document.getElementById('notification-container');
+            const msgEl = bottom ? document.getElementById('notification-msg-bottom') : document.getElementById('notification-msg');
+            msgEl.innerText = msg;
+            el.classList.remove('hidden');
+            setTimeout(() => el.classList.add('hidden'), 3000);
+        };
+
+        const sendTelegramNotification = async (message) => {
+            if (!state.telegramChatId || !TELEGRAM_BOT_TOKEN) return;
+            try {
+                await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: state.telegramChatId, text: message, parse_mode: 'Markdown' }) });
+            } catch (err) {}
+        };
+
+        // --- INICIALIZACIÓN Y SESIÓN ---
+        const initSystem = async () => {
+            if (useFirebase) {
+                try {
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) await signInWithCustomToken(auth, __initial_auth_token);
+                    else await signInAnonymously(auth);
+                } catch (e) {}
+                onAuthStateChanged(auth, (currentUser) => {
+                    state.user = currentUser;
+                    checkSavedSession();
+                    setupFirestoreListeners();
+                });
+            } else {
+                state.user = { uid: 'offline-agent' };
+                checkSavedSession();
+                loadLocalData();
+            }
+        };
+
+        const checkSavedSession = async () => {
+            const saved = localStorage.getItem(KEY_SESSION);
+            if (saved) {
+                try {
+                    const { username, password } = JSON.parse(saved);
+                    const localProf = await dbGetProfile(username);
+                    if (localProf && localProf.password === password) {
+                        state.profile = localProf;
+                        renderApp();
+                    }
+                } catch (e) {}
+            }
+            document.getElementById('loading-screen').classList.add('hidden');
+            if (!state.profile) {
+                document.getElementById('auth-screen').classList.remove('hidden');
+                document.getElementById('app-screen').classList.add('hidden');
+            }
+        };
+
+        const setupFirestoreListeners = () => {
+            if (!useFirebase || !state.user) return;
+            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'history'), (snap) => {
+                const hist = snap.docs.map(doc => ({ id: doc.id, ...doc.data() })).sort((a, b) => b.timestamp - a.timestamp);
+                state.globalHistory = hist;
+                if(state.profile) { renderHistory(); renderRanking(); }
+            }, () => loadLocalData());
+            
+            onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'global'), (docSnap) => {
+                if (docSnap.exists()) {
+                    const d = docSnap.data();
+                    if (d.prizePool) state.prizePool = d.prizePool;
+                    if (d.telegramChatId) state.telegramChatId = d.telegramChatId;
+                    if(state.profile) renderSettingsUI();
+                }
+            }, () => loadLocalData());
+        };
+
+        const loadLocalData = () => {
+            const hist = JSON.parse(localStorage.getItem(KEY_HISTORY) || '[]').sort((a, b) => b.timestamp - a.timestamp);
+            state.globalHistory = hist;
+            const sett = JSON.parse(localStorage.getItem(KEY_SETTINGS) || '{}');
+            if (sett.prizePool) state.prizePool = sett.prizePool;
+            if (sett.telegramChatId) state.telegramChatId = sett.telegramChatId;
+            if (state.profile) { renderHistory(); renderRanking(); renderSettingsUI(); }
+        };
+
+        // --- UI UPDATERS ---
+        const renderApp = () => {
+            document.getElementById('auth-screen').classList.add('hidden');
+            document.getElementById('app-screen').classList.remove('hidden');
+            document.getElementById('app-screen').style.display = 'flex';
+            
+            updateHeader();
+            
+            // Admin Panel Visibility
+            if (state.profile.username === 'Drake Cora') {
+                document.getElementById('nav-panel').classList.remove('hidden');
+                document.getElementById('admin-pool-edit').classList.remove('hidden');
+                loadAllProfiles();
+            } else {
+                document.getElementById('nav-panel').classList.add('hidden');
+                document.getElementById('admin-pool-edit').classList.add('hidden');
+                if(state.activeTab === 'panel') switchTab('game');
+            }
+            
+            switchTab(state.activeTab);
+            updateGameUI();
+            renderHistory();
+            renderRanking();
+            renderSettingsUI();
+            lucide.createIcons();
+        };
+
+        const updateHeader = () => {
+            document.getElementById('header-username').innerText = state.profile.username;
+            const bal = state.gameState === 'playing' ? state.profile.balance + state.sessionPoints : state.profile.balance;
+            document.getElementById('header-balance').innerText = `${Math.round(bal)} PTS`;
+            const hc = document.getElementById('header-balance-container');
+            if (bal < 0) { hc.classList.add('border-red-900/60'); document.getElementById('header-balance').classList.replace('text-yellow-400', 'text-red-500'); }
+            else { hc.classList.remove('border-red-900/60'); document.getElementById('header-balance').classList.replace('text-red-500', 'text-yellow-400'); }
+        };
+
+        const switchTab = (tab) => {
+            state.activeTab = tab;
+            ['game', 'history', 'ranking', 'panel'].forEach(t => {
+                const el = document.getElementById(`tab-${t}`);
+                if(el) { t === tab ? el.classList.remove('hidden') : el.classList.add('hidden'); }
+            });
+            
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                const t = btn.getAttribute('data-tab');
+                const icon = btn.querySelector('.icon-active');
+                if (t === tab) {
+                    btn.classList.replace('text-neutral-600', t==='game'||t==='history'?'text-white':'text-red-500');
+                    btn.classList.remove('hover:text-neutral-400');
+                    if(t!=='game'&&t!=='history') icon.classList.add('drop-shadow-[0_0_10px_rgba(239,68,68,0.5)]');
+                    if(t==='game') icon.classList.add('text-red-500');
+                } else {
+                    btn.classList.replace('text-white', 'text-neutral-600');
+                    btn.classList.replace('text-red-500', 'text-neutral-600');
+                    btn.classList.add('hover:text-neutral-400');
+                    icon.classList.remove('drop-shadow-[0_0_10px_rgba(239,68,68,0.5)]');
+                    icon.classList.remove('text-red-500');
+                }
+            });
+        };
+
+        // --- LÓGICA DE JUEGO ---
+        const getLevel = () => state.profile?.level || 1;
+        const getBoardConfig = () => {
+            const l = getLevel();
+            if (l <= 3) return { r: 8, c: 8, m: 8 + l * 2 }; 
+            if (l <= 6) return { r: 10, c: 10, m: 10 + l * 3 }; 
+            if (l <= 9) return { r: 12, c: 12, m: 15 + l * 3 }; 
+            return { r: 16, c: 16, m: 30 + l * 4 }; 
+        };
+
+        const startGame = () => {
+            initAudio(); playSound('start');
+            state.sessionTime = 0; state.sessionPoints = 0; state.gameState = 'playing'; state.isFirstClick = true; state.flagMode = false;
+            const cfg = getBoardConfig();
+            state.minesBoard = Array(cfg.r).fill(null).map((_, r) => Array(cfg.c).fill(null).map((_, c) => ({ row: r, col: c, isMine: false, isRevealed: false, isFlagged: false, neighborMines: 0 })));
+            
+            clearInterval(state.timerInterval);
+            state.timerInterval = setInterval(() => { state.sessionTime++; updateGameHeader(); }, 1000);
+            
+            document.getElementById('result-overlay').classList.add('hidden');
+            document.getElementById('mines-standby').classList.add('hidden');
+            document.getElementById('mines-grid').classList.remove('hidden');
+            
+            updateGameUI();
+            renderBoard();
+        };
+
+        const endGame = async (msg, pts, isWin) => {
+            clearInterval(state.timerInterval);
+            state.gameState = isWin ? 'won' : 'lost';
+            state.sessionPoints = pts;
+            
+            const newBal = Math.round(state.profile.balance + pts);
+            let newLvl = state.profile.level || 1; if(isWin) newLvl++;
+            state.profile.balance = newBal; state.profile.level = newLvl;
+            await dbSetProfile(state.profile.username, state.profile);
+
+            const log = { id: 'log-'+Date.now(), username: state.profile.username, game: 'mines', result: msg, amount: Math.round(pts), time: new Date().toLocaleTimeString(), timestamp: Date.now() };
+            if (useFirebase) { try { await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'history'), log); } catch(e){} }
+            
+            const localHist = JSON.parse(localStorage.getItem(KEY_HISTORY) || '[]'); localHist.unshift(log);
+            localStorage.setItem(KEY_HISTORY, JSON.stringify(localHist.slice(0, 100)));
+            state.globalHistory = localHist;
+
+            if (isWin) { playSound('win'); showNotification(`¡Despejado! +${pts} PTS`); sendTelegramNotification(`🏆 *¡OPERACIÓN EXITOSA!*\n👤 *Agente:* \`${state.profile.username}\`\n⭐ *Nuevo Nivel:* ${newLvl}\n💰 *Puntos:* +${pts} PTS`); }
+            else { playSound('explosion'); showNotification(`¡KABOOM! ${pts>0?'+':''}${pts} PTS`); }
+
+            updateGameUI(); updateHeader(); renderBoard(); showResultOverlay(isWin); renderHistory(); renderRanking();
+        };
+
+        const handleCellClick = (r, c) => {
+            if (state.gameState !== 'playing') return;
+            initAudio();
+            let b = state.minesBoard;
+            if (state.flagMode && !b[r][c].isRevealed) { toggleFlag(r, c); return; }
+            
+            const cfg = getBoardConfig();
+
+            if (b[r][c].isRevealed) {
+                if (b[r][c].neighborMines > 0) {
+                    let flags = 0;
+                    for(let dr=-1; dr<=1; dr++) for(let dc=-1; dc<=1; dc++) { const nr=r+dr, nc=c+dc; if(nr>=0 && nr<cfg.r && nc>=0 && nc<cfg.c && b[nr][nc].isFlagged) flags++; }
+                    if (flags === b[r][c].neighborMines) {
+                        let det=false, revAny=false; const revB = b.flat().filter(x=>x.isRevealed).length;
+                        const rec = (rr,cc) => {
+                            if(rr<0 || rr>=cfg.r || cc<0 || cc>=cfg.c) return;
+                            if(b[rr][cc].isRevealed || b[rr][cc].isFlagged) return;
+                            if(b[rr][cc].isMine) { det=true; b[rr][cc].isRevealed=true; return; }
+                            b[rr][cc].isRevealed=true; revAny=true;
+                            if(b[rr][cc].neighborMines===0) { for(let ddr=-1; ddr<=1; ddr++) for(let ddc=-1; ddc<=1; ddc++) rec(rr+ddr,cc+ddc); }
+                        };
+                        for(let dr=-1; dr<=1; dr++) for(let dc=-1; dc<=1; dc++) rec(r+dr, c+dc);
+                        
+                        if (det) { b.forEach(row=>row.forEach(cell=>{if(cell.isMine) cell.isRevealed=true;})); endGame('Error Táctico (Mina)', state.sessionPoints + PTS_LOSE_PENALTY, false); if(navigator.vibrate) navigator.vibrate([100,50,100]); return; }
+                        if (revAny) {
+                            const revA = b.flat().filter(x=>x.isRevealed).length; state.sessionPoints += ((revA-revB)*PTS_PER_REVEAL);
+                            playSound('click'); checkWin(); renderBoard(); updateGameHeader(); updateHeader();
+                        }
+                    }
+                }
+                return;
+            }
+
+            if (b[r][c].isFlagged) return;
+
+            if (state.isFirstClick) {
+                const forb = new Set(); for(let dr=-1; dr<=1; dr++) for(let dc=-1; dc<=1; dc++) forb.add(`${r+dr},${c+dc}`);
+                let placed = 0;
+                while(placed < cfg.m) { let rr=Math.floor(Math.random()*cfg.r), cc=Math.floor(Math.random()*cfg.c); if(!b[rr][cc].isMine && !forb.has(`${rr},${cc}`)) { b[rr][cc].isMine=true; placed++; } }
+                for(let rr=0; rr<cfg.r; rr++) for(let cc=0; cc<cfg.c; cc++) {
+                    if(!b[rr][cc].isMine) {
+                        let count=0; for(let dr=-1; dr<=1; dr++) for(let dc=-1; dc<=1; dc++) { if(rr+dr>=0 && rr+dr<cfg.r && cc+dc>=0 && cc+dc<cfg.c && b[rr+dr][cc+dc].isMine) count++; }
+                        b[rr][cc].neighborMines = count;
+                    }
+                }
+                state.isFirstClick = false;
+            }
+
+            if (b[r][c].isMine) {
+                b.forEach(row=>row.forEach(cell=>{if(cell.isMine) cell.isRevealed=true;}));
+                endGame('Mina Detonada', state.sessionPoints + PTS_LOSE_PENALTY, false);
+                if(navigator.vibrate) navigator.vibrate([100,50,100]); return;
+            }
+
+            const recRev = (rr,cc) => {
+                if(rr<0 || rr>=cfg.r || cc<0 || cc>=cfg.c) return;
+                if(b[rr][cc].isRevealed || b[rr][cc].isFlagged || b[rr][cc].isMine) return;
+                b[rr][cc].isRevealed=true;
+                if(b[rr][cc].neighborMines===0) { for(let dr=-1; dr<=1; dr++) for(let dc=-1; dc<=1; dc++) recRev(rr+dr, cc+dc); }
+            };
+
+            const revB = b.flat().filter(x=>x.isRevealed).length;
+            recRev(r,c);
+            const revA = b.flat().filter(x=>x.isRevealed).length;
+            state.sessionPoints += ((revA-revB)*PTS_PER_REVEAL);
+            
+            playSound('click'); checkWin(); renderBoard(); updateGameHeader(); updateHeader();
+        };
+
+        const toggleFlag = (r, c) => {
+            if (state.gameState !== 'playing') return;
+            if (!state.minesBoard[r][c].isRevealed) {
+                state.minesBoard[r][c].isFlagged = !state.minesBoard[r][c].isFlagged;
+                playSound('blip'); if(navigator.vibrate) navigator.vibrate(15);
+                renderBoard(); updateGameHeader();
+            }
+        };
+
+        const checkWin = () => {
+            const cfg = getBoardConfig(); const revCount = state.minesBoard.flat().filter(x=>x.isRevealed).length;
+            if (revCount === (cfg.r * cfg.c) - cfg.m) endGame(`Nivel ${getLevel()} Despejado`, state.sessionPoints + PTS_WIN_BONUS, true);
+        };
+
+        // --- RENDERERS ---
+        const updateGameUI = () => {
+            document.getElementById('game-level').innerText = `Nivel ${getLevel()}`;
+            document.getElementById('game-controls-idle').classList.toggle('hidden', state.gameState !== 'idle');
+            document.getElementById('game-controls-playing').classList.toggle('hidden', state.gameState !== 'playing');
+            document.getElementById('game-controls-ended').classList.toggle('hidden', state.gameState === 'idle' || state.gameState === 'playing');
+            
+            const btnDig = document.getElementById('btn-mode-dig');
+            const btnFlag = document.getElementById('btn-mode-flag');
+            if(state.flagMode) {
+                btnFlag.className = "flex-1 rounded-xl font-black text-[10px] uppercase tracking-wider flex justify-center items-center gap-1.5 transition-all bg-yellow-600 text-white shadow-inner";
+                btnDig.className = "flex-1 rounded-xl font-black text-[10px] uppercase tracking-wider flex justify-center items-center gap-1.5 transition-all bg-neutral-950 text-neutral-500 border border-neutral-800";
+            } else {
+                btnDig.className = "flex-1 rounded-xl font-black text-[10px] uppercase tracking-wider flex justify-center items-center gap-1.5 transition-all bg-red-600 text-white shadow-inner";
+                btnFlag.className = "flex-1 rounded-xl font-black text-[10px] uppercase tracking-wider flex justify-center items-center gap-1.5 transition-all bg-neutral-950 text-neutral-500 border border-neutral-800";
+            }
+            updateGameHeader();
+        };
+
+        const updateGameHeader = () => {
+            const cfg = getBoardConfig();
+            let flags = 0; state.minesBoard.forEach(r => r.forEach(c => { if(c.isFlagged) flags++; }));
+            document.getElementById('game-mines-left').innerText = Math.max(0, cfg.m - flags);
+            const ptsEl = document.getElementById('game-session-points');
+            ptsEl.innerText = `+${state.sessionPoints}`;
+            ptsEl.className = `flex items-center gap-1.5 px-3 py-1.5 border-r border-neutral-800 font-black ${state.sessionPoints > 0 ? 'text-emerald-400' : 'text-neutral-500'}`;
+            document.getElementById('game-time').innerText = state.sessionTime;
+            document.getElementById('game-timer-icon').classList.toggle('animate-pulse', state.gameState === 'playing');
+        };
+
+        let pressTimer = null; let ignoreNext = false;
+        const renderBoard = () => {
+            const grid = document.getElementById('mines-grid');
+            const cfg = getBoardConfig();
+            grid.style.gridTemplateColumns = `repeat(${cfg.c}, minmax(30px, 40px))`;
+            grid.style.gridAutoRows = 'minmax(30px, 40px)';
+            grid.innerHTML = '';
+
+            state.minesBoard.forEach((row, r) => row.forEach((cell, c) => {
+                const btn = document.createElement('button');
+                let cls = "w-full h-full flex items-center justify-center text-[16px] sm:text-[18px] font-black rounded-[2px] transition-all relative overflow-hidden select-none ";
+                if (!cell.isRevealed) {
+                    cls += "bg-neutral-800 border-t-2 border-l-2 border-t-neutral-600 border-l-neutral-600 border-b-2 border-r-2 border-b-neutral-950 border-r-neutral-950 hover:bg-neutral-700";
+                } else if (cell.isMine) {
+                    cls += "bg-red-950 border border-red-800 shadow-[inset_0_0_10px_rgba(220,38,38,0.5)]";
+                } else {
+                    cls += "bg-neutral-950 border border-neutral-900 shadow-[inset_0_0_5px_rgba(0,0,0,0.8)]";
+                }
+                btn.className = cls;
+                btn.disabled = state.gameState !== 'playing';
+
+                if (cell.isRevealed) {
+                    if (cell.isMine) btn.innerHTML = `<i data-lucide="bomb" class="w-[18px] h-[18px] text-red-500 animate-pulse drop-shadow-md"></i>`;
+                    else if (cell.neighborMines > 0) btn.innerHTML = `<span class="drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)] ${NUM_COLORS[cell.neighborMines]}">${cell.neighborMines}</span>`;
+                } else if (cell.isFlagged) {
+                    btn.innerHTML = `<div class="absolute inset-0 bg-yellow-500/10 flex items-center justify-center"><i data-lucide="flag" class="w-4 h-4 text-yellow-500 drop-shadow-md"></i></div>`;
+                }
+
+                // Eventos
+                btn.onclick = () => { if(ignoreNext){ ignoreNext=false; return; } handleCellClick(r, c); };
+                btn.oncontextmenu = (e) => { e.preventDefault(); toggleFlag(r, c); };
+                btn.ontouchstart = () => {
+                    if(state.gameState !== 'playing') return;
+                    pressTimer = setTimeout(() => { toggleFlag(r,c); ignoreNext=true; if(navigator.vibrate) navigator.vibrate(50); pressTimer=null; }, 400);
+                };
+                btn.ontouchend = () => { if(pressTimer) { clearTimeout(pressTimer); pressTimer=null; } };
+                btn.ontouchmove = () => { if(pressTimer) { clearTimeout(pressTimer); pressTimer=null; } };
+
+                grid.appendChild(btn);
+            }));
+            lucide.createIcons();
+        };
+
+        const showResultOverlay = (isWin) => {
+            const ov = document.getElementById('result-overlay');
+            ov.classList.remove('hidden');
+            const ic = document.getElementById('result-icon-container');
+            if(isWin) {
+                ic.innerHTML = `<div class="absolute inset-0 bg-yellow-500 blur-xl opacity-30 rounded-full"></div><i data-lucide="trophy" class="w-[72px] h-[72px] text-yellow-500 mx-auto mb-3 relative z-10"></i>`;
+                document.getElementById('result-title').innerText = '¡Área Asegurada!';
+                document.getElementById('result-title').className = 'text-2xl font-black uppercase tracking-widest text-white';
+                document.getElementById('result-points').className = 'font-black text-xl mt-1 bg-neutral-900 inline-block px-4 py-1 rounded-full border text-emerald-400 border-emerald-900/50';
+                document.getElementById('result-points').innerText = `+${state.sessionPoints} PTS`;
+                document.getElementById('result-detail').innerText = `¡Bono (+${PTS_WIN_BONUS}) Aplicado!`;
+                document.getElementById('result-detail').className = "text-xs mt-2 text-yellow-400 font-black tracking-widest uppercase";
+            } else {
+                ic.innerHTML = `<div class="absolute inset-0 bg-red-600 blur-xl opacity-30 rounded-full"></div><i data-lucide="skull" class="w-[72px] h-[72px] text-red-500 mx-auto mb-3 relative z-10"></i>`;
+                document.getElementById('result-title').innerText = '¡Misión Fallida!';
+                document.getElementById('result-title').className = 'text-2xl font-black uppercase tracking-widest text-red-500';
+                document.getElementById('result-points').className = 'font-black text-xl mt-1 bg-neutral-900 inline-block px-4 py-1 rounded-full border text-red-400 border-red-900/50';
+                document.getElementById('result-points').innerText = `${state.sessionPoints} PTS`;
+                document.getElementById('result-detail').innerText = `Penalización de ${PTS_LOSE_PENALTY} Aplicada`;
+                document.getElementById('result-detail').className = "text-xs mt-2 text-red-400 font-black tracking-widest uppercase";
+            }
+            lucide.createIcons();
+        };
+
+        const renderHistory = () => {
+            const hc = document.getElementById('history-container');
+            const myH = state.globalHistory.filter(h => h.username === state.profile?.username);
+            if(myH.length === 0) {
+                hc.innerHTML = `<div class="text-center py-16 text-neutral-600"><i data-lucide="skull" class="w-12 h-12 mx-auto mb-4 opacity-20"></i><p class="text-[10px] uppercase tracking-widest font-black">Sin actividad.</p></div>`;
+            } else {
+                hc.innerHTML = myH.map(entry => `
+                    <div class="bg-neutral-900/80 border border-neutral-800/80 rounded-xl p-3.5 flex justify-between items-center hover:bg-neutral-900 transition-colors">
+                        <div>
+                            <div class="flex items-center gap-2 mb-1.5">
+                                <span class="text-[9px] uppercase font-black text-neutral-400 border border-neutral-700 px-1.5 py-0.5 rounded bg-neutral-950/50">Mines</span>
+                                <span class="font-black text-[10px] uppercase tracking-widest ${entry.amount > 0 ? 'text-emerald-400' : 'text-red-500'}">${entry.result}</span>
+                            </div>
+                            <p class="text-[9px] text-neutral-600 font-mono tracking-wider">${entry.time}</p>
+                        </div>
+                        <div class="font-black text-sm flex items-center gap-1 ${entry.amount > 0 ? 'text-emerald-400' : 'text-red-500'}">
+                            ${entry.amount > 0 ? '+' : ''}${entry.amount} <span class="text-[8px] text-neutral-500 mt-0.5">PTS</span>
+                        </div>
+                    </div>
+                `).join('');
+            }
+            lucide.createIcons();
+        };
+
+        const renderRanking = () => {
+            const rc = document.getElementById('ranking-container');
+            const up = {};
+            state.globalHistory.forEach(entry => { if(!up[entry.username]) up[entry.username] = 0; up[entry.username] += (entry.amount||0); });
+            const rank = Object.entries(up).map(([username, points]) => ({username, points})).sort((a,b) => b.points - a.points);
+            
+            if(rank.length === 0) {
+                rc.innerHTML = `<div class="text-center py-10 text-neutral-600"><i data-lucide="medal" class="w-12 h-12 mx-auto mb-3 opacity-20"></i><p class="font-black uppercase tracking-widest text-[10px]">Servidores Vacíos.</p></div>`;
+            } else {
+                rc.innerHTML = rank.map((u, i) => `
+                    <div class="p-4 flex justify-between items-center border-b border-neutral-800/40 last:border-0 transition-colors ${u.username === state.profile?.username ? 'bg-red-950/20 border-l-4 border-l-red-500' : ''}">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full flex items-center justify-center font-black text-[11px] shrink-0 ${i===0?'bg-yellow-500 text-yellow-950 shadow-[0_0_15px_rgba(234,179,8,0.5)]': i===1?'bg-neutral-300 text-neutral-900': i===2?'bg-amber-700 text-white':'bg-neutral-800 text-neutral-500'}">
+                                ${i + 1}
+                            </div>
+                            <div class="flex flex-col">
+                                <span class="font-black text-[11px] uppercase tracking-wider ${u.username === state.profile?.username ? 'text-white' : 'text-neutral-300'}">
+                                    ${u.username} ${u.username === state.profile?.username ? '(Tú)' : ''}
+                                </span>
+                                ${i < 10 ? `<span class="flex items-center gap-1 text-[9px] font-black text-red-400 mt-0.5 drop-shadow-sm tracking-wider"><i data-lucide="coins" class="w-2.5 h-2.5"></i> +${FUSION_COIN_PRIZES[i]} FC</span>` : ''}
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-1 font-black text-sm ${u.points >= 0 ? 'text-yellow-400' : 'text-red-500'}">
+                            ${u.points} <span class="text-[8px] text-neutral-600 mt-0.5">PTS</span>
+                        </div>
+                    </div>
+                `).join('');
+            }
+            lucide.createIcons();
+        };
+
+        const renderSettingsUI = () => {
+            document.getElementById('prize-pool-display').innerText = state.prizePool;
+            document.getElementById('display-telegram-id').innerText = state.telegramChatId || 'Sin Configurar';
+        };
+
+        const loadAllProfiles = async () => {
+            state.allProfiles = await dbGetAllProfiles();
+            const list = document.getElementById('admin-users-list');
+            list.innerHTML = state.allProfiles.map(prof => `
+                <div class="bg-neutral-950 border border-neutral-800/80 rounded-xl p-3.5 flex justify-between items-center">
+                    <div>
+                        <p class="text-xs font-black text-white flex items-center gap-1">👤 ${prof.username} ${prof.username.toLowerCase()==='drake cora' ? '<span class="text-[8px] bg-red-600/20 border border-red-500/50 text-red-500 px-1.5 py-0.5 rounded ml-1 font-black tracking-widest uppercase">Master</span>' : ''}</p>
+                        <p class="text-[9px] text-neutral-500 font-bold mt-1">Clave: <span class="text-neutral-300 font-mono">${prof.password}</span> | Rango: <span class="text-yellow-500">Nivel ${prof.level||1}</span></p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs text-yellow-400 font-bold mr-2">${Math.round(prof.balance)} PTS</span>
+                        <button onclick="window.editUser('${prof.username}')" class="p-1.5 rounded-lg bg-neutral-900 border border-neutral-800 text-neutral-400 hover:text-white transition-colors"><i data-lucide="edit-3" class="w-3.5 h-3.5"></i></button>
+                        <button onclick="window.deleteUser('${prof.username}')" class="p-1.5 rounded-lg bg-red-950/50 border border-red-900/30 text-red-500 hover:bg-red-600 hover:text-white transition-colors"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+                    </div>
+                </div>
+            `).join('');
+            lucide.createIcons();
+        };
+
+        // --- EVENTOS DEL DOM ---
+        document.getElementById('auth-switch-btn').onclick = () => {
+            state.authMode = state.authMode === 'login' ? 'register' : 'login';
+            document.getElementById('auth-btn-text').innerText = state.authMode === 'login' ? 'Iniciar Secuencia' : 'Registrar Agente';
+            document.getElementById('auth-btn-icon').setAttribute('data-lucide', state.authMode === 'login' ? 'log-in' : 'user-plus');
+            document.getElementById('auth-switch-btn').innerText = state.authMode === 'login' ? '¿Nuevo Recluta? Iniciar Enlace' : '¿Ya tienes perfil? Acceder';
+            lucide.createIcons();
+        };
+
+        document.getElementById('toggle-password').onclick = () => {
+            state.showPassword = !state.showPassword;
+            document.getElementById('auth-password').type = state.showPassword ? 'text' : 'password';
+            document.getElementById('eye-icon').setAttribute('data-lucide', state.showPassword ? 'eye-off' : 'eye');
+            lucide.createIcons();
+        };
+
+        document.getElementById('toggle-remember').onclick = () => {
+            state.rememberMe = !state.rememberMe;
+            const b = document.getElementById('remember-box');
+            if(state.rememberMe) { b.className = "w-4 h-4 rounded border flex items-center justify-center transition-colors bg-red-600 border-red-500 text-white"; b.innerHTML = `<i data-lucide="check" class="w-3 h-3 stroke-[4px]"></i>`; }
+            else { b.className = "w-4 h-4 rounded border flex items-center justify-center transition-colors border-neutral-800 bg-neutral-950"; b.innerHTML = ''; }
+            lucide.createIcons();
+        };
+
+        document.getElementById('auth-form').onsubmit = async (e) => {
+            e.preventDefault(); initAudio();
+            const u = document.getElementById('auth-username').value.trim();
+            const p = document.getElementById('auth-password').value;
+            if(!u || !p) return showNotification('Ingresa credenciales de agente.');
+            const s = u.toLowerCase();
+
+            if (s === 'drake cora' && p === '930801') {
+                const mp = { username: 'Drake Cora', password: '930801', balance: 9999999, uid: state.user?.uid || 'master', level: 10 };
+                await dbSetProfile('Drake Cora', mp); state.profile = mp;
+                if(state.rememberMe) localStorage.setItem(KEY_SESSION, JSON.stringify({username: 'Drake Cora', password: '930801'}));
+                showNotification('🌟 ACCESO MAESTRO CONCEDIDO 🌟', true); playSound('win'); renderApp(); return;
+            }
+
+            try {
+                const ep = await dbGetProfile(s);
+                if (state.authMode === 'register') {
+                    if (ep) return showNotification('Ese indicativo ya está activo.');
+                    const np = { username: u, password: p, balance: 100, uid: state.user?.uid || 'local', level: 1 };
+                    await dbSetProfile(u, np); state.profile = np;
+                    if(state.rememberMe) localStorage.setItem(KEY_SESSION, JSON.stringify({username: u, password: p}));
+                    showNotification(`Reclutamiento completado. +100 PTS`); playSound('win');
+                    sendTelegramNotification(`🆕 *¡Nuevo Recluta Registrado!*\n👤 *Agente:* \`${u}\`\n🎖️ *Rango inicial:* Nivel 1\n🪙 *Fondo inicial:* 100 PTS`);
+                    renderApp();
+                } else {
+                    if (ep && ep.password === p) {
+                        state.profile = ep;
+                        if(state.rememberMe) localStorage.setItem(KEY_SESSION, JSON.stringify({username: ep.username, password: p}));
+                        playSound('start'); showNotification('Secuencia aceptada.'); renderApp();
+                    } else { showNotification('Código de seguridad inválido.'); }
+                }
+            } catch(err) { showNotification('Inconsistencia en datos.'); }
+        };
+
+        document.getElementById('btn-logout').onclick = () => {
+            localStorage.removeItem(KEY_SESSION); state.profile = null; state.gameState = 'idle';
+            clearInterval(state.timerInterval);
+            document.getElementById('app-screen').classList.add('hidden');
+            document.getElementById('auth-screen').classList.remove('hidden');
+        };
+
+        document.getElementById('btn-mute').onclick = () => {
+            state.isMuted = !state.isMuted;
+            document.getElementById('mute-icon').setAttribute('data-lucide', state.isMuted ? 'volume-x' : 'volume-2');
+            lucide.createIcons();
+        };
+
+        document.getElementById('btn-copy-link').onclick = () => {
+            try { navigator.clipboard.writeText(window.location.href); showNotification("Enlace Copiado."); } catch (e) { showNotification("Error al copiar."); }
+        };
+
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            btn.onclick = () => switchTab(btn.getAttribute('data-tab'));
+        });
+
+        document.getElementById('btn-start-game').onclick = startGame;
+        document.getElementById('btn-next-try').onclick = startGame;
+        document.getElementById('btn-abort').onclick = () => { if(state.gameState === 'playing') endGame('Misión Abortada', state.sessionPoints - 50, false); };
+        document.getElementById('btn-mode-dig').onclick = () => { state.flagMode = false; updateGameUI(); };
+        document.getElementById('btn-mode-flag').onclick = () => { state.flagMode = true; updateGameUI(); };
+
+        document.getElementById('btn-share').onclick = async () => {
+            showNotification('Cargando lente óptico...'); document.getElementById('btn-share').classList.add('hidden');
+            document.getElementById('wm-username').innerText = state.profile.username; document.getElementById('wm-level').innerText = getLevel();
+            document.getElementById('capture-watermark').classList.remove('hidden');
+            try {
+                const canvas = await html2canvas(document.getElementById('capture-zone'), { backgroundColor: '#0a0a0a', scale: 2 });
+                canvas.toBlob(async (blob) => {
+                    const file = new File([blob], 'danger-mines.png', { type: 'image/png' });
+                    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                        try { await navigator.share({ title: 'Danger Mines', text: `¡Nivel ${getLevel()} superado!`, files: [file] }); } catch(e){}
+                    } else {
+                        const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `danger-${state.profile.username}.png`; a.click();
+                    }
+                    document.getElementById('btn-share').classList.remove('hidden'); document.getElementById('capture-watermark').classList.add('hidden');
+                });
+            } catch(e) { document.getElementById('btn-share').classList.remove('hidden'); document.getElementById('capture-watermark').classList.add('hidden'); }
+        };
+
+        // ADMIN EVENTS
+        document.getElementById('btn-edit-pool').onclick = () => {
+            document.getElementById('btn-edit-pool').classList.add('hidden');
+            document.getElementById('form-edit-pool').classList.remove('hidden');
+            document.getElementById('input-pool').value = state.prizePool;
+        };
+        document.getElementById('btn-cancel-pool').onclick = () => {
+            document.getElementById('btn-edit-pool').classList.remove('hidden');
+            document.getElementById('form-edit-pool').classList.add('hidden');
+        };
+        document.getElementById('btn-save-pool').onclick = async () => {
+            const v = document.getElementById('input-pool').value.trim(); if(!v) return;
+            if(useFirebase) { try{ await setDoc(doc(db,'artifacts',appId,'public','data','settings','global'), {prizePool:v}, {merge:true}); }catch(e){} }
+            const s = JSON.parse(localStorage.getItem(KEY_SETTINGS)||'{}'); s.prizePool=v; localStorage.setItem(KEY_SETTINGS, JSON.stringify(s));
+            state.prizePool = v; renderSettingsUI(); document.getElementById('btn-cancel-pool').click(); showNotification('Pozo Modificado'); playSound('blip');
+        };
+
+        document.getElementById('btn-edit-tg').onclick = () => {
+            document.getElementById('view-telegram-id').classList.add('hidden');
+            document.getElementById('form-telegram-id').classList.remove('hidden');
+            document.getElementById('input-tg').value = state.telegramChatId;
+        };
+        document.getElementById('btn-cancel-tg').onclick = () => {
+            document.getElementById('view-telegram-id').classList.remove('hidden');
+            document.getElementById('form-telegram-id').classList.add('hidden');
+        };
+        document.getElementById('btn-save-tg').onclick = async () => {
+            const v = document.getElementById('input-tg').value.trim(); if(!v) return;
+            if(useFirebase) { try{ await setDoc(doc(db,'artifacts',appId,'public','data','settings','global'), {telegramChatId:v}, {merge:true}); }catch(e){} }
+            const s = JSON.parse(localStorage.getItem(KEY_SETTINGS)||'{}'); s.telegramChatId=v; localStorage.setItem(KEY_SETTINGS, JSON.stringify(s));
+            state.telegramChatId = v; renderSettingsUI(); document.getElementById('btn-cancel-tg').click(); showNotification('Chat ID Guardado'); playSound('blip');
+        };
+
+        // Exposed functions for inline onclick in generated HTML
+        window.editUser = (username) => {
+            const prof = state.allProfiles.find(p => p.username === username); if(!prof) return;
+            document.getElementById('edit-orig-user').value = prof.username;
+            document.getElementById('edit-username').value = prof.username;
+            document.getElementById('edit-password').value = prof.password;
+            document.getElementById('edit-level').value = prof.level;
+            document.getElementById('edit-balance').value = prof.balance;
+            document.getElementById('modal-edit-user').classList.remove('hidden');
+        };
+        window.deleteUser = async (username) => {
+            if(username.toLowerCase() === 'drake cora') return showNotification("Prohibido: Auto-destrucción.");
+            await dbDeleteProfile(username); showNotification("Agente purgado."); loadAllProfiles();
+        };
+        document.getElementById('btn-cancel-edit-user').onclick = () => document.getElementById('modal-edit-user').classList.add('hidden');
+        document.getElementById('btn-save-edit-user').onclick = async () => {
+            const orig = document.getElementById('edit-orig-user').value.toLowerCase();
+            const nu = document.getElementById('edit-username').value.trim();
+            const up = { username: nu, password: document.getElementById('edit-password').value, level: Number(document.getElementById('edit-level').value), balance: Number(document.getElementById('edit-balance').value), uid: 'fallback' };
+            if(orig !== nu.toLowerCase()) await dbDeleteProfile(orig);
+            await dbSetProfile(nu, up);
+            if(state.profile.username.toLowerCase() === orig) { state.profile = up; updateHeader(); }
+            showNotification("Perfil modificado."); document.getElementById('btn-cancel-edit-user').click(); loadAllProfiles();
+        };
+
+        // BOOTSTRAP
+        initSystem();
+
+    </script>
 </body>
 </html>

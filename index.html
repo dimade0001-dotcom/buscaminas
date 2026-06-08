@@ -465,7 +465,7 @@
             }
         }
 
-        // INICIALIZACIÓN DE FIREBASE (Corregida condición de carrera)
+        // INICIALIZACIÓN DE FIREBASE (Corregida y Sin LocalStorage)
         async function setupFirebase() {
             try {
                 if (typeof __firebase_config !== 'undefined' && __firebase_config) {
@@ -474,73 +474,60 @@
                     auth = getAuth(app);
                     db = getFirestore(app);
 
-                    // Autenticación con Token Personalizado o Anónimo esperando a que resuelva (Regla 3)
-                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                        await signInWithCustomToken(auth, __initial_auth_token);
-                    } else {
-                        await signInAnonymously(auth);
-                    }
+                    const initAuth = async () => {
+                        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                            await signInWithCustomToken(auth, __initial_auth_token);
+                        } else {
+                            await signInAnonymously(auth);
+                        }
+                    };
+                    
+                    await initAuth();
 
-                    // Registrar el observador seguro tras garantizar el login exitoso
                     onAuthStateChanged(auth, (user) => {
                         if (user) {
                             firebaseUser = user;
                             useFirebase = true;
                             document.getElementById('badge-cloud').classList.remove('hidden');
                             document.getElementById('badge-local').classList.add('hidden');
-                            document.getElementById('auth-warning').classList.add('hidden'); // Ocultar warning
+                            document.getElementById('auth-warning').classList.add('hidden');
                             initListeners();
                         } else {
-                            if (useFirebase) {
-                                fallbackToLocal();
-                            }
+                            if (useFirebase) fallbackToLocal("Sesión cerrada por el servidor.");
                         }
                     });
                 } else {
-                    fallbackToLocal();
+                    fallbackToLocal("Entorno sin credenciales de nube aprovisionadas.");
                 }
             } catch (e) {
-                console.error("Firebase connection error: ", e);
-                fallbackToLocal();
+                console.error("Firebase error: ", e);
+                fallbackToLocal(e.message);
             }
         }
 
-        function fallbackToLocal() {
+        function fallbackToLocal(reason = "") {
             useFirebase = false;
             document.getElementById('badge-local').classList.remove('hidden');
             document.getElementById('badge-cloud').classList.add('hidden');
-            document.getElementById('auth-warning').classList.remove('hidden');
             
-            // Cargar datos locales de prueba
-            const savedUsers = localStorage.getItem('dm_local_users');
-            if (savedUsers) {
-                users = JSON.parse(savedUsers);
-            } else {
+            const warningBox = document.getElementById('auth-warning');
+            warningBox.classList.remove('hidden');
+            warningBox.innerHTML = `<i data-lucide="server" class="w-4 h-4 inline-block mb-1"></i><br>Servidor Global Inactivo<br><span class="text-[8px] tracking-widest text-yellow-600">${reason}</span>`;
+            
+            // Cargar datos en memoria ultrarrápida (Cumplimiento de seguridad: Sin localStorage)
+            if (users.length === 0) {
                 users = [
                     { username: 'Drake Cora', password: '123', balance: 1500, level: 5, status: 'offline', last_active: Date.now() },
-                    { username: 'Agente Shadow', password: '123', balance: 840, level: 3, status: 'offline', last_active: Date.now() },
-                    { username: 'Alpha Team', password: '123', balance: 350, level: 1, status: 'offline', last_active: Date.now() }
+                    { username: 'Agente Shadow', password: '123', balance: 840, level: 3, status: 'offline', last_active: Date.now() }
                 ];
-                localStorage.setItem('dm_local_users', JSON.stringify(users));
             }
-
-            const savedPool = localStorage.getItem('dm_local_pool');
-            if (savedPool) adminSettings.globalPool = savedPool;
-
-            const savedTg = localStorage.getItem('dm_local_tg');
-            if (savedTg) adminSettings.telegramId = savedTg;
-
-            const savedLogs = localStorage.getItem('dm_local_logs');
-            if (savedLogs) {
-                historyLogs = JSON.parse(savedLogs);
-            } else {
-                historyLogs = [
-                    { id: '1', msg: 'Enlace local establecido correctamente.', timestamp: Date.now() }
-                ];
+            if (historyLogs.length === 0) {
+                historyLogs = [{ id: '1', msg: 'Enlace de memoria activado y listo.', timestamp: Date.now() }];
             }
 
             renderAll();
             hideLoading();
+            lucide.createIcons();
         }
 
         function hideLoading() {
@@ -548,38 +535,26 @@
             checkSavedSession();
         }
 
-        // CONTROLADORES DE BASE DE DATOS (CON PATHS SEGÚN LA REGLA 1)
+        // CONTROLADORES DE BASE DE DATOS
         function initListeners() {
             if (!useFirebase || !firebaseUser) return;
 
-            // 1. Escuchar usuarios públicos
             const usersRef = collection(db, 'artifacts', appId, 'public', 'data', 'users');
             onSnapshot(usersRef, (snapshot) => {
                 users = [];
-                snapshot.forEach((doc) => {
-                    users.push(doc.data());
-                });
+                snapshot.forEach((doc) => users.push(doc.data()));
                 renderAll();
                 hideLoading();
-            }, (error) => {
-                console.error("Users sync error:", error);
-            });
+            }, (error) => console.error("Users sync error:", error));
 
-            // 2. Escuchar logs globales
             const logsRef = collection(db, 'artifacts', appId, 'public', 'data', 'logs');
             onSnapshot(logsRef, (snapshot) => {
                 historyLogs = [];
-                snapshot.forEach((doc) => {
-                    historyLogs.push(doc.data());
-                });
-                // Ordenar por tiempo descendente en memoria (Regla 2: Sin queries complejas)
+                snapshot.forEach((doc) => historyLogs.push(doc.data()));
                 historyLogs.sort((a,b) => b.timestamp - a.timestamp);
                 renderHistory();
-            }, (error) => {
-                console.error("Logs sync error:", error);
-            });
+            }, (error) => console.error("Logs sync error:", error));
 
-            // 3. Escuchar configuraciones globales (pozo, telegram, etc.)
             const settingsRef = collection(db, 'artifacts', appId, 'public', 'data', 'settings');
             onSnapshot(settingsRef, (snapshot) => {
                 snapshot.forEach((doc) => {
@@ -589,12 +564,10 @@
                         document.getElementById('display-telegram-id').innerText = adminSettings.telegramId || 'Sin Configurar';
                     }
                 });
-            }, (error) => {
-                console.error("Settings sync error:", error);
-            });
+            }, (error) => console.error("Settings sync error:", error));
         }
 
-        // GUARDADO DE DATOS (REGLAS 1 Y 3)
+        // GUARDADO DE DATOS (Nube o Memoria)
         async function saveUserToDB(userObj) {
             if (useFirebase && firebaseUser) {
                 const userDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', userObj.username.toLowerCase());
@@ -603,7 +576,6 @@
                 const index = users.findIndex(u => u.username.toLowerCase() === userObj.username.toLowerCase());
                 if (index !== -1) users[index] = userObj;
                 else users.push(userObj);
-                localStorage.setItem('dm_local_users', JSON.stringify(users));
                 renderAll();
             }
         }
@@ -614,7 +586,6 @@
                 await deleteDoc(userDocRef);
             } else {
                 users = users.filter(u => u.username.toLowerCase() !== username.toLowerCase());
-                localStorage.setItem('dm_local_users', JSON.stringify(users));
                 renderAll();
             }
         }
@@ -624,39 +595,25 @@
                 const settingsDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'general');
                 await setDoc(settingsDocRef, adminSettings);
             } else {
-                localStorage.setItem('dm_local_pool', adminSettings.globalPool);
-                localStorage.setItem('dm_local_tg', adminSettings.telegramId);
                 renderAll();
             }
         }
 
         async function appendLogToDB(msgText) {
-            const logObj = {
-                id: crypto.randomUUID(),
-                msg: msgText,
-                timestamp: Date.now()
-            };
+            const logObj = { id: crypto.randomUUID(), msg: msgText, timestamp: Date.now() };
             if (useFirebase && firebaseUser) {
                 const logDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'logs', logObj.id);
                 await setDoc(logDocRef, logObj);
             } else {
                 historyLogs.unshift(logObj);
-                localStorage.setItem('dm_local_logs', JSON.stringify(historyLogs));
                 renderHistory();
             }
         }
 
-        // CONTROL DE SESIÓN (AUTENTICACIÓN MANUAL)
+        // CONTROL DE SESIÓN
         function checkSavedSession() {
-            const saved = localStorage.getItem('dm_remembered_agent');
-            if (saved) {
-                const agent = JSON.parse(saved);
-                const matched = users.find(u => u.username.toLowerCase() === agent.username.toLowerCase() && u.password === agent.password);
-                if (matched) {
-                    loginAgent(matched);
-                    return;
-                }
-            }
+            // Al prescindir de localStorage para mayor seguridad,
+            // siempre requerimos inicio de sesión al abrir el panel si no hay nube
             showAuthScreen();
         }
 
@@ -670,13 +627,6 @@
             currentUser.status = 'online';
             currentUser.last_active = Date.now();
             saveUserToDB(currentUser);
-
-            // Guardar o borrar de localStorage según recordar
-            if (rememberMe) {
-                localStorage.setItem('dm_remembered_agent', JSON.stringify(currentUser));
-            } else {
-                localStorage.removeItem('dm_remembered_agent');
-            }
 
             // Actualizar interfaz
             document.getElementById('header-username').innerText = currentUser.username;
@@ -1359,7 +1309,6 @@
                     currentUser.last_active = Date.now();
                     await saveUserToDB(currentUser);
                 }
-                localStorage.removeItem('dm_remembered_agent');
                 currentUser = null;
                 showAuthScreen();
             });

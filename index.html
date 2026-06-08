@@ -105,6 +105,7 @@
               </div>
             </div>
             <div class="flex items-center gap-2">
+              <span id="badge-cloud" class="hidden text-[8px] bg-emerald-600/20 text-emerald-500 border border-emerald-500/50 px-1.5 py-0.5 rounded uppercase font-black tracking-wider shadow-[0_0_10px_rgba(16,185,129,0.2)]">☁️ Nube</span>
               <span id="badge-local" class="hidden text-[8px] bg-yellow-600/20 text-yellow-500 px-1.5 py-0.5 rounded uppercase font-black tracking-wider">Local</span>
               <button id="btn-copy-link" class="p-1.5 rounded-lg bg-neutral-900 border border-neutral-800 text-neutral-400 hover:text-white transition-colors" title="Copiar Enlace Nube">
                 <i data-lucide="link-2" class="w-3.5 h-3.5"></i>
@@ -353,7 +354,7 @@
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
-        import { getFirestore, collection, doc, setDoc, getDoc, onSnapshot, addDoc, updateDoc, deleteDoc } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
+        import { getFirestore, collection, doc, setDoc, getDoc, getDocs, onSnapshot, addDoc, updateDoc, deleteDoc } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
 
         // --- INICIALIZACIÓN ---
         lucide.createIcons();
@@ -368,6 +369,7 @@
                 db = getFirestore(app);
                 useFirebase = true;
                 console.log("🔥 Enlace táctico con Firebase establecido.");
+                document.getElementById('badge-cloud').classList.remove('hidden');
             } else {
                 console.log("ℹ️ Firebase no configurado. Local DB activa.");
                 document.getElementById('badge-local').classList.remove('hidden');
@@ -475,7 +477,15 @@
             if (useFirebase) { try { await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'profiles', safe)); } catch (e) {} }
             const profs = JSON.parse(localStorage.getItem(KEY_PROFILES) || '{}'); delete profs[safe]; localStorage.setItem(KEY_PROFILES, JSON.stringify(profs));
         };
-        const dbGetAllProfiles = async () => { return Object.values(JSON.parse(localStorage.getItem(KEY_PROFILES) || '{}')); };
+        const dbGetAllProfiles = async () => { 
+            if (useFirebase && state.user) {
+                try {
+                    const snap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'profiles'));
+                    return snap.docs.map(d => d.data());
+                } catch(e) { console.error("Error de sincronización de perfiles:", e); }
+            }
+            return Object.values(JSON.parse(localStorage.getItem(KEY_PROFILES) || '{}')); 
+        };
 
         // --- NOTIFICACIONES ---
         const showNotification = (msg, bottom = false) => {
@@ -537,7 +547,7 @@
                 const hist = snap.docs.map(doc => ({ id: doc.id, ...doc.data() })).sort((a, b) => b.timestamp - a.timestamp);
                 state.globalHistory = hist;
                 if(state.profile) { renderHistory(); renderRanking(); }
-            }, () => loadLocalData());
+            }, (error) => { console.warn("Fallback a historial local", error); loadLocalData(); });
             
             onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'global'), (docSnap) => {
                 if (docSnap.exists()) {
@@ -546,7 +556,7 @@
                     if (d.telegramChatId) state.telegramChatId = d.telegramChatId;
                     if(state.profile) renderSettingsUI();
                 }
-            }, () => loadLocalData());
+            }, (error) => { console.warn("Fallback a settings locales", error); loadLocalData(); });
         };
 
         const loadLocalData = () => {

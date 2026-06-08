@@ -33,6 +33,12 @@
         }
         .success-glow { animation: success-pulse 2s infinite; }
         
+        @keyframes sync-pulse {
+            0% { transform: scale(1); opacity: 0.5; }
+            100% { transform: scale(1.4); opacity: 0; }
+        }
+        .sync-ring { animation: sync-pulse 1s cubic-bezier(0, 0, 0.2, 1) infinite; }
+        
         .cell { transition: all 0.15s ease-in-out; }
         .cell.revealed { background-color: #171717; border-color: #262626; box-shadow: inset 0 0 6px rgba(0,0,0,0.6); }
         .cell:active:not(.revealed) { transform: scale(0.92); }
@@ -91,7 +97,8 @@
 
                 <div id="auth-warning" class="hidden mt-2 p-3 bg-yellow-900/20 border border-yellow-700/50 rounded-xl text-[10px] text-yellow-500 font-bold uppercase tracking-wider text-center">
                     <i data-lucide="wifi-off" class="w-4 h-4 inline-block mb-1"></i><br>
-                    Modo Local: La sincronización en la nube falló. Estás jugando en modo aislado.
+                    Modo Entrenamiento Local<br>
+                    <span class="text-[9px] text-neutral-400 mt-1 block">Usa "Drake Cora" y clave "123" para las pruebas.</span>
                 </div>
 
                 <button type="submit" id="auth-submit-btn" class="w-full bg-red-600 hover:bg-red-500 text-white font-black uppercase tracking-widest py-4 rounded-xl shadow-[0_0_20px_rgba(220,38,38,0.3)] transition-all flex justify-center items-center gap-2 mt-8 text-sm active:scale-95">
@@ -133,13 +140,20 @@
         <main class="flex-1 p-4 flex flex-col items-center w-full">
             <div id="tab-game" class="flex-1 flex flex-col w-full max-w-2xl">
                 
-                <div class="mb-3 w-full flex flex-wrap items-center gap-2 px-3 py-2 bg-neutral-900/60 border border-neutral-800/80 rounded-xl text-xs">
-                  <span class="text-[9px] font-black uppercase text-neutral-500 tracking-wider flex items-center gap-1.5">
-                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Servidores Activos:
-                  </span>
-                  <div id="active-agents-container" class="flex flex-wrap gap-1.5 text-[10px] font-bold w-full sm:w-auto">
-                    <span class="text-neutral-600 italic">Conectando canales...</span>
+                <div class="mb-3 w-full flex flex-wrap items-center justify-between gap-2 px-3 py-2 bg-neutral-900/60 border border-neutral-800/80 rounded-xl text-xs">
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <span class="text-[9px] font-black uppercase text-neutral-500 tracking-wider flex items-center gap-1.5">
+                      <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Servidores Activos:
+                    </span>
+                    <div id="active-agents-container" class="flex flex-wrap gap-1.5 text-[10px] font-bold">
+                      <span class="text-neutral-600 italic">Conectando canales...</span>
+                    </div>
                   </div>
+                  <!-- Botón Forzar Sincronización Global -->
+                  <button id="btn-force-sync" class="bg-red-950/60 hover:bg-red-900 border border-red-950/80 hover:border-red-500 text-red-400 hover:text-white px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider flex items-center gap-1.5 transition-all relative overflow-hidden">
+                    <span class="absolute inset-0 bg-red-500/20 sync-ring rounded-lg pointer-events-none"></span>
+                    <i data-lucide="refresh-cw" class="w-3 h-3 animate-spin"></i> Pulso de Red
+                  </button>
                 </div>
 
                 <div id="tactical-header-card" class="bg-neutral-900 border border-neutral-800 rounded-2xl p-4 mb-4 shadow-xl relative overflow-hidden transition-all">
@@ -380,6 +394,9 @@
         let app = null, auth = null, db = null, useFirebase = false;
         let firebaseUser = null;
 
+        // CANAL DE COMUNICACIÓN LOCAL INTER-PESTAÑAS (Para forzar sincronización instantánea sin nube)
+        const localSyncChannel = new BroadcastChannel('danger_mines_sync');
+
         // ESTADO GLOBAL COMPARTIDO
         const ADMIN_USER = 'drake cora';
         let isLoginMode = true;
@@ -465,7 +482,7 @@
             }
         }
 
-        // INICIALIZACIÓN DE FIREBASE (Corregida y Sin LocalStorage)
+        // INICIALIZACIÓN DE FIREBASE (Segura e Inteligente)
         async function setupFirebase() {
             try {
                 if (typeof __firebase_config !== 'undefined' && __firebase_config) {
@@ -512,9 +529,8 @@
             
             const warningBox = document.getElementById('auth-warning');
             warningBox.classList.remove('hidden');
-            warningBox.innerHTML = `<i data-lucide="server" class="w-4 h-4 inline-block mb-1"></i><br>Servidor Global Inactivo<br><span class="text-[8px] tracking-widest text-yellow-600">${reason}</span>`;
             
-            // Cargar datos en memoria ultrarrápida (Cumplimiento de seguridad: Sin localStorage)
+            // Cargar datos en memoria local activa
             if (users.length === 0) {
                 users = [
                     { username: 'Drake Cora', password: '123', balance: 1500, level: 5, status: 'offline', last_active: Date.now() },
@@ -522,7 +538,7 @@
                 ];
             }
             if (historyLogs.length === 0) {
-                historyLogs = [{ id: '1', msg: 'Enlace de memoria activado y listo.', timestamp: Date.now() }];
+                historyLogs = [{ id: '1', msg: 'Enlace local táctico listo. Abre otra pestaña para ver sincronización.', timestamp: Date.now() }];
             }
 
             renderAll();
@@ -567,7 +583,29 @@
             }, (error) => console.error("Settings sync error:", error));
         }
 
-        // GUARDADO DE DATOS (Nube o Memoria)
+        // CANAL DE TRANSMISIÓN DE EVENTOS LOCALES (BroadcastChannel para pruebas inter-pestañas instantáneas)
+        localSyncChannel.onmessage = (event) => {
+            const { type, data } = event.data;
+            if (type === 'SYNC_ALL') {
+                users = data.users;
+                historyLogs = data.historyLogs;
+                adminSettings = data.adminSettings;
+                renderAll();
+                showNotification("📡 Red Sincronizada Localmente");
+            } else if (type === 'PULSE_REQUEST') {
+                // Responder enviando mis datos locales
+                broadcastState();
+            }
+        };
+
+        function broadcastState() {
+            localSyncChannel.postMessage({
+                type: 'SYNC_ALL',
+                data: { users, historyLogs, adminSettings }
+            });
+        }
+
+        // GUARDADO DE DATOS (Nube o Memoria Local con Broadcast automático)
         async function saveUserToDB(userObj) {
             if (useFirebase && firebaseUser) {
                 const userDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', userObj.username.toLowerCase());
@@ -577,6 +615,7 @@
                 if (index !== -1) users[index] = userObj;
                 else users.push(userObj);
                 renderAll();
+                broadcastState(); // Transmitir cambio a otras pestañas
             }
         }
 
@@ -587,6 +626,7 @@
             } else {
                 users = users.filter(u => u.username.toLowerCase() !== username.toLowerCase());
                 renderAll();
+                broadcastState();
             }
         }
 
@@ -596,6 +636,7 @@
                 await setDoc(settingsDocRef, adminSettings);
             } else {
                 renderAll();
+                broadcastState();
             }
         }
 
@@ -607,13 +648,12 @@
             } else {
                 historyLogs.unshift(logObj);
                 renderHistory();
+                broadcastState();
             }
         }
 
         // CONTROL DE SESIÓN
         function checkSavedSession() {
-            // Al prescindir de localStorage para mayor seguridad,
-            // siempre requerimos inicio de sesión al abrir el panel si no hay nube
             showAuthScreen();
         }
 
@@ -710,7 +750,7 @@
                 badge.className = `px-2 py-0.5 rounded-full border text-[9px] uppercase tracking-wider flex items-center gap-1 font-black ${
                     isMe ? 'bg-red-950/40 text-red-400 border-red-500/50' : 'bg-neutral-900 text-neutral-400 border-neutral-800'
                 }`;
-                badge.innerHTML = `<span class="w-1 h-1 rounded-full bg-emerald-500 animate-pulse"></span> ${u.username}`;
+                badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> ${u.username}`;
                 container.appendChild(badge);
             });
         }
@@ -719,7 +759,7 @@
             const container = document.getElementById('ranking-container');
             container.innerHTML = '';
             
-            // Ordenar en base a balance descendente (Client-side para cumplir Regla 2)
+            // Ordenar en base a balance descendente
             const sorted = [...users].sort((a,b) => b.balance - a.balance);
 
             if (sorted.length === 0) {
@@ -861,7 +901,6 @@
             // Ajustar configuraciones según el nivel táctico del jugador
             if (currentUser) {
                 document.getElementById('game-level').innerText = `Nivel ${currentUser.level}`;
-                // Escalabilidad de dificultad
                 gameConfig.rows = 8 + Math.min(currentUser.level, 4); 
                 gameConfig.cols = 8 + Math.min(currentUser.level, 4); 
                 gameConfig.mines = 10 + (currentUser.level * 2);
@@ -886,7 +925,6 @@
             timerInterval = setInterval(() => {
                 timeElapsed++;
                 document.getElementById('game-time').innerText = timeElapsed;
-                // Pequeña animación de latido táctico en el icono del temporizador
                 timerIcon.classList.toggle('text-red-500');
             }, 1000);
         }
@@ -908,14 +946,12 @@
             }
         }
 
-        // Poner minas asegurándose que el primer clic siempre sea seguro
         function placeMines(firstRow, firstCol) {
             let placed = 0;
             while (placed < gameConfig.mines) {
                 const r = Math.floor(Math.random() * gameConfig.rows);
                 const c = Math.floor(Math.random() * gameConfig.cols);
 
-                // Evitar el primer clic y sus celdas adyacentes para una experiencia óptima
                 const isFirstClickArea = Math.abs(r - firstRow) <= 1 && Math.abs(c - firstCol) <= 1;
 
                 if (!board[r][c].isMine && !isFirstClickArea) {
@@ -924,7 +960,6 @@
                 }
             }
 
-            // Calcular números adyacentes
             for (let r = 0; r < gameConfig.rows; r++) {
                 for (let c = 0; c < gameConfig.cols; c++) {
                     if (board[r][c].isMine) continue;
@@ -950,19 +985,16 @@
 
             for (let r = 0; r < gameConfig.rows; r++) {
                 for (let c = 0; c < gameConfig.cols; c++) {
-                    const cellData = board[r][c];
                     const cellEl = document.createElement('button');
                     cellEl.dataset.r = r;
                     cellEl.dataset.c = c;
                     cellEl.className = `cell w-8 h-8 sm:w-10 sm:h-10 text-xs font-black rounded-lg border border-neutral-800 bg-neutral-900 flex items-center justify-center transition-all focus:outline-none select-none`;
 
-                    // Touch events y Mouse Click unificados
                     cellEl.addEventListener('click', (e) => {
                         e.preventDefault();
                         handleCellInteraction(r, c);
                     });
 
-                    // Clic derecho para colocar banderas
                     cellEl.addEventListener('contextmenu', (e) => {
                         e.preventDefault();
                         toggleFlag(r, c);
@@ -1000,7 +1032,6 @@
             const cell = board[r][c];
             if (cell.isRevealed || cell.isFlagged) return;
 
-            // Primer clic seguro
             const isFirstClick = !board.some(row => row.some(cell => cell.isRevealed));
             if (isFirstClick) {
                 placeMines(r, c);
@@ -1014,13 +1045,11 @@
                 return;
             }
 
-            // Incrementar puntuación temporal de la ronda
             sessionPoints += PTS_PER_CELL;
             document.getElementById('game-session-points').innerText = `+${sessionPoints}`;
             document.getElementById('game-session-points').className = 'flex items-center gap-1.5 px-3 py-1.5 border-r border-neutral-800 font-black text-emerald-500';
 
             if (cell.adjacentMines === 0) {
-                // Revelar adyacentes vacíos de forma recursiva
                 for (let dr = -1; dr <= 1; dr++) {
                     for (let dc = -1; dc <= 1; dc++) {
                         const nr = r + dr;
@@ -1071,7 +1100,6 @@
             clearInterval(timerInterval);
             sounds.bomb();
 
-            // Revelar todas las minas restantes
             for (let r = 0; r < gameConfig.rows; r++) {
                 for (let c = 0; c < gameConfig.cols; c++) {
                     if (board[r][c].isMine) {
@@ -1081,7 +1109,6 @@
                 }
             }
 
-            // Resaltar la mina que explotó
             const explodedEl = document.querySelector(`.cell[data-r="${hitR}"][data-c="${hitC}"]`);
             if (explodedEl) explodedEl.classList.add('bg-red-950/60', 'border-red-600', 'tactical-glow');
 
@@ -1116,7 +1143,6 @@
 
             const finalPoints = sessionPoints + PTS_WIN_BONUS;
             currentUser.balance += finalPoints;
-            // Incrementar nivel si supera la prueba
             currentUser.level += 1;
             await saveUserToDB(currentUser);
 
@@ -1124,7 +1150,7 @@
             document.getElementById('game-controls-ended').classList.remove('hidden');
 
             appendLogToDB(`Agente ${currentUser.username} completó con éxito el Nivel ${currentUser.level - 1} (+${finalPoints} PTS).`);
-            notifyTelegram(`Agente 👤 <b>${currentUser.username}</b> superó con éxito el Nivel <b>${currentUser.level - 1}</b> de forma limpia y segura, sumando <b>+${finalPoints} PTS</b>.`);
+            notifyTelegram(`Agente 👤 <b>${currentUser.username}</b> superó con éxito el Nivel <b>${currentUser.level - 1}</b> sumando <b>+${finalPoints} PTS</b>.`);
 
             showResultScreen(true, finalPoints);
         }
@@ -1182,7 +1208,6 @@
             const watermark = document.getElementById('capture-watermark');
             const shareBtn = document.getElementById('btn-share');
             
-            // Preparar watermark visual para la captura
             watermark.classList.remove('hidden');
             shareBtn.classList.add('opacity-0');
 
@@ -1195,7 +1220,6 @@
 
                 const dataUrl = canvas.toDataURL('image/png');
                 
-                // Descargar captura del expediente
                 const link = document.createElement('a');
                 link.download = `Expediente-DangerMines-${currentUser.username}.png`;
                 link.href = dataUrl;
@@ -1210,7 +1234,7 @@
             }
         }
 
-        // CONTROL DE EVENTOS DOM (LISTENERS PRINCIPALES)
+        // CONTROL DE EVENTOS DOM
         document.addEventListener('DOMContentLoaded', () => {
             setupFirebase();
 
@@ -1269,7 +1293,6 @@
 
                 if (!usernameInput || !passwordInput) return;
 
-                // Buscar usuario en base de datos local / global
                 const matchedUser = users.find(u => u.username.toLowerCase() === usernameInput.toLowerCase());
 
                 if (isLoginMode) {
@@ -1283,7 +1306,6 @@
                         showNotification('El Agente no existe.');
                     }
                 } else {
-                    // Modo Registro
                     if (matchedUser) {
                         showNotification('El Identificador ya está ocupado.');
                     } else {
@@ -1299,6 +1321,21 @@
                         loginAgent(newAgent);
                         showNotification('Agente vinculado a la red.');
                     }
+                }
+            });
+
+            // Botón Forzar Sincronización Manual
+            document.getElementById('btn-force-sync').addEventListener('click', () => {
+                sounds.click();
+                if (useFirebase) {
+                    // Firebase sincroniza automáticamente en tiempo real por onSnapshot,
+                    // pero podemos forzar un log global para comprobar conectividad
+                    appendLogToDB(`Agente ${currentUser?.username || "Anónimo"} solicitó pulso de red global.`);
+                    showNotification("📡 Pulso global emitido a la nube");
+                } else {
+                    // Sincronización local instantánea entre pestañas
+                    localSyncChannel.postMessage({ type: 'PULSE_REQUEST' });
+                    showNotification("📡 Sincronización forzada inter-pestañas");
                 }
             });
 
@@ -1327,7 +1364,7 @@
                 lucide.createIcons();
             });
 
-            // Copiar enlace de juego alternativo sin usar navigator.clipboard iFrame bug
+            // Copiar enlace de juego
             document.getElementById('btn-copy-link').addEventListener('click', () => {
                 const el = document.createElement('textarea');
                 el.value = window.location.href;
@@ -1435,7 +1472,6 @@
                 const matchedUser = users.find(u => u.username.toLowerCase() === origUser.toLowerCase());
                 if (matchedUser) {
                     if (origUser.toLowerCase() !== newUsername.toLowerCase()) {
-                        // Eliminar registro antiguo si cambia el nombre principal
                         await deleteUserFromDB(origUser);
                     }
                     

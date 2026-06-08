@@ -19,8 +19,23 @@
         .scrollbar-hide::-webkit-scrollbar { display: none; }
         .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
         body { -webkit-tap-highlight-color: transparent; }
-        /* Evitar zoom en inputs en iOS */
-        input { font-size: 16px !important; }
+        input { font-size: 16px !important; } /* Prevenir zoom en iOS */
+        
+        /* Animaciones personalizadas de pulso de peligro y éxito táctico */
+        @keyframes tactical-pulse {
+            0%, 100% { box-shadow: 0 0 10px rgba(220, 38, 38, 0.2); }
+            50% { box-shadow: 0 0 25px rgba(220, 38, 38, 0.6); }
+        }
+        .tactical-glow {
+            animation: tactical-pulse 2s infinite;
+        }
+        @keyframes success-pulse {
+            0%, 100% { box-shadow: 0 0 10px rgba(16, 185, 129, 0.2); }
+            50% { box-shadow: 0 0 25px rgba(16, 185, 129, 0.6); }
+        }
+        .success-glow {
+            animation: success-pulse 2s infinite;
+        }
     </style>
 </head>
 <body class="bg-neutral-950 text-neutral-200 font-sans selection:bg-red-900 overflow-x-hidden min-h-screen flex flex-col">
@@ -32,7 +47,7 @@
         </div>
     </div>
 
-    <div id="notification-bottom" class="fixed bottom-10 left-1/2 transform -translate-x-1/2 z-[100] hidden">
+    <div id="notification-bottom" class="fixed bottom-24 left-1/2 transform -translate-x-1/2 z-[100] hidden">
         <div id="notification-msg-bottom" class="bg-red-600 text-white px-6 py-3 rounded-xl font-black tracking-wider shadow-[0_0_20px_rgba(220,38,38,0.5)] text-center text-[10px] uppercase animate-bounce">
             Mensaje
         </div>
@@ -51,11 +66,11 @@
             
             <div class="text-center mb-10 relative z-10">
                 <div class="inline-block p-4 bg-neutral-950 rounded-2xl border border-neutral-800 shadow-inner mb-6 relative">
-                   <div class="absolute inset-0 border border-red-500/30 rounded-2xl animate-ping opacity-20"></div>
-                   <i data-lucide="bomb" class="w-12 h-12 text-red-500 drop-shadow-[0_0_15px_rgba(239,68,68,0.6)]"></i>
+                    <div class="absolute inset-0 border border-red-500/30 rounded-2xl animate-ping opacity-20"></div>
+                    <i data-lucide="bomb" class="w-12 h-12 text-red-500 drop-shadow-[0_0_15px_rgba(239,68,68,0.6)]"></i>
                 </div>
                 <h1 class="text-4xl font-black italic tracking-widest uppercase text-transparent bg-clip-text bg-gradient-to-r from-red-500 via-red-400 to-white">
-                  Danger <span class="text-red-600 drop-shadow-[0_0_10px_rgba(220,38,38,0.5)]">Mines</span>
+                    Danger <span class="text-red-600 drop-shadow-[0_0_10px_rgba(220,38,38,0.5)]">Mines</span>
                 </h1>
                 <p class="text-neutral-500 text-[10px] mt-2 uppercase tracking-[0.3em] font-black">Operación de Élite</p>
             </div>
@@ -63,19 +78,19 @@
             <form id="auth-form" class="space-y-4 relative z-10">
                 <div class="space-y-1">
                    <label class="text-[10px] font-black uppercase text-neutral-500 tracking-wider">Identificador (Usuario)</label>
-                   <input type="text" id="auth-username" class="w-full bg-neutral-950/50 border border-neutral-800 rounded-xl py-3.5 px-4 text-white font-bold outline-none focus:border-red-500 transition-all placeholder:text-neutral-700" placeholder="Ej: Drake Cora" />
+                   <input type="text" id="auth-username" class="w-full bg-neutral-950/50 border border-neutral-800 rounded-xl py-3.5 px-4 text-white font-bold outline-none focus:border-red-500 transition-all placeholder:text-neutral-700" placeholder="Ej: Drake Cora" required />
                 </div>
                 <div class="space-y-1 relative">
                    <label class="text-[10px] font-black uppercase text-neutral-500 tracking-wider">Código de Seguridad (Contraseña)</label>
                    <div class="relative">
-                     <input type="password" id="auth-password" class="w-full bg-neutral-950/50 border border-neutral-800 rounded-xl py-3.5 px-4 text-white font-bold outline-none focus:border-red-500 transition-all placeholder:text-neutral-700 pr-12" placeholder="••••••••" />
+                     <input type="password" id="auth-password" class="w-full bg-neutral-950/50 border border-neutral-800 rounded-xl py-3.5 px-4 text-white font-bold outline-none focus:border-red-500 transition-all placeholder:text-neutral-700 pr-12" placeholder="••••••••" required />
                      <button type="button" id="toggle-password" class="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-white transition-colors">
                        <i data-lucide="eye" id="eye-icon" class="w-[18px] h-[18px]"></i>
                      </button>
                    </div>
                 </div>
 
-                <div class="flex items-center gap-2 pt-2 cursor-pointer" id="toggle-remember">
+                <div class="flex items-center gap-2 pt-2 cursor-pointer select-none" id="toggle-remember">
                   <div id="remember-box" class="w-4 h-4 rounded border flex items-center justify-center transition-colors bg-red-600 border-red-500 text-white">
                     <i data-lucide="check" id="remember-check" class="w-3 h-3 stroke-[4px]"></i>
                   </div>
@@ -105,6 +120,7 @@
               </div>
             </div>
             <div class="flex items-center gap-2">
+              <span id="badge-room" class="text-[8px] bg-purple-600/20 text-purple-400 border border-purple-500/50 px-1.5 py-0.5 rounded uppercase font-black tracking-wider shadow-[0_0_10px_rgba(168,85,247,0.2)]">SALA: ---</span>
               <span id="badge-cloud" class="hidden text-[8px] bg-emerald-600/20 text-emerald-500 border border-emerald-500/50 px-1.5 py-0.5 rounded uppercase font-black tracking-wider shadow-[0_0_10px_rgba(16,185,129,0.2)]">☁️ Nube</span>
               <span id="badge-local" class="hidden text-[8px] bg-yellow-600/20 text-yellow-500 px-1.5 py-0.5 rounded uppercase font-black tracking-wider">Local</span>
               <button id="btn-copy-link" class="p-1.5 rounded-lg bg-neutral-900 border border-neutral-800 text-neutral-400 hover:text-white transition-colors" title="Copiar Enlace Nube">
@@ -125,7 +141,7 @@
             <!-- TABS -->
             <!-- JUEGO -->
             <div id="tab-game" class="flex-1 flex flex-col w-full max-w-2xl">
-                <div class="bg-neutral-900 border border-neutral-800 rounded-2xl p-4 mb-4 shadow-xl relative overflow-hidden">
+                <div id="tactical-header-card" class="bg-neutral-900 border border-neutral-800 rounded-2xl p-4 mb-4 shadow-xl relative overflow-hidden transition-all">
                   <div class="absolute right-0 top-0 w-32 h-32 bg-red-500/5 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
                   <div class="flex justify-between items-center mb-4 relative z-10">
                     <div class="flex items-center gap-2 font-black uppercase tracking-wider text-[12px] text-red-500">
@@ -156,10 +172,10 @@
                       Abortar
                     </button>
                     <div class="w-2/3 flex gap-1.5">
-                      <button id="btn-mode-dig" class="flex-1 rounded-xl font-black text-[10px] uppercase tracking-wider flex justify-center items-center gap-1.5 transition-all bg-red-600 text-white shadow-inner">
+                      <button id="btn-mode-dig" class="flex-1 rounded-xl font-black text-[10px] uppercase tracking-wider flex justify-center items-center gap-1.5 transition-all bg-red-600 text-white shadow-inner py-3">
                         <i data-lucide="target" class="w-3.5 h-3.5"></i> Cavar
                       </button>
-                      <button id="btn-mode-flag" class="flex-1 rounded-xl font-black text-[10px] uppercase tracking-wider flex justify-center items-center gap-1.5 transition-all bg-neutral-950 text-neutral-500 border border-neutral-800">
+                      <button id="btn-mode-flag" class="flex-1 rounded-xl font-black text-[10px] uppercase tracking-wider flex justify-center items-center gap-1.5 transition-all bg-neutral-950 text-neutral-500 border border-neutral-800 py-3">
                         <i data-lucide="flag" class="w-3.5 h-3.5"></i> Bandera
                       </button>
                     </div>
@@ -176,17 +192,17 @@
                   <div class="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:14px_14px] pointer-events-none"></div>
     
                   <!-- Overlay Resultado -->
-                  <div id="result-overlay" class="hidden absolute inset-0 z-30 flex flex-col items-center justify-center bg-neutral-950/90 backdrop-blur-sm rounded-2xl p-4">
-                    <div class="text-center transform animate-[bounce_0.5s_ease-out] mb-6">
-                      <div id="result-icon-container" class="relative">
+                  <div id="result-overlay" class="hidden absolute inset-0 z-30 flex flex-col items-center justify-center bg-neutral-950/90 backdrop-blur-sm rounded-2xl p-4 text-center">
+                    <div class="transform animate-[bounce_0.5s_ease-out] mb-6">
+                      <div id="result-icon-container" class="relative flex justify-center mb-4">
                           <!-- Generado por JS -->
                       </div>
                       <h2 id="result-title" class="text-2xl font-black uppercase tracking-widest text-white">Resultado</h2>
                       <p id="result-points" class="font-black text-xl mt-1 bg-neutral-900 inline-block px-4 py-1 rounded-full border text-white border-neutral-900/50">0 PTS</p>
-                      <p id="result-detail" class="text-xs mt-2 font-black tracking-widest uppercase"></p>
+                      <p id="result-detail" class="text-xs mt-2 font-black tracking-widest uppercase text-neutral-400"></p>
                     </div>
                     <button id="btn-share" class="bg-white hover:bg-neutral-200 text-black font-black uppercase text-[10px] tracking-[0.2em] py-3 px-8 rounded-full flex items-center gap-2 shadow-[0_0_20px_rgba(255,255,255,0.4)] transition-all active:scale-95">
-                      <i data-lucide="share-2" class="w-4 h-4"></i> Capturar Pantalla
+                      <i data-lucide="share-2" class="w-4 h-4"></i> Capturar Expediente
                     </button>
                   </div>
     
@@ -197,12 +213,12 @@
                     </div>
                     <div id="mines-standby" class="text-neutral-600/50 text-center flex flex-col items-center gap-3">
                         <i data-lucide="bomb" class="w-12 h-12 mx-auto animate-pulse text-neutral-800"></i>
-                        <p class="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-700">En Espera</p>
+                        <p class="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-700">En Espera del Despliegue</p>
                      </div>
                   </div>
                   
                   <div id="capture-watermark" class="hidden absolute bottom-4 left-0 right-0 text-center z-50">
-                    <p class="font-black italic uppercase tracking-widest text-[10px] bg-neutral-950/90 py-2 px-5 border border-neutral-800 rounded-full inline-flex items-center gap-2 shadow-2xl text-red-500">
+                    <p class="font-black italic uppercase tracking-widest text-[10px] bg-neutral-950/95 py-2.5 px-6 border border-neutral-800 rounded-full inline-flex items-center gap-2 shadow-2xl text-red-500">
                       <i data-lucide="shield-alert" class="w-3 h-3"></i> Agente: <span id="wm-username"></span> | Nivel: <span id="wm-level"></span>
                     </p>
                   </div>
@@ -212,7 +228,7 @@
             <!-- HISTORIAL -->
             <div id="tab-history" class="hidden space-y-4 w-full max-w-md mx-auto">
                 <h2 class="text-sm font-black flex items-center gap-2 uppercase tracking-widest border-l-4 border-neutral-600 pl-3 mb-6 text-neutral-300">
-                  <i data-lucide="history" class="w-4 h-4 text-neutral-500"></i> Expedientes
+                  <i data-lucide="history" class="w-4 h-4 text-neutral-500"></i> Expedientes de Operación
                 </h2>
                 <div id="history-container" class="space-y-3">
                     <!-- Generado por JS -->
@@ -232,11 +248,11 @@
                     <span id="prize-pool-display">1.5T</span> <span class="text-2xl sm:text-3xl text-red-500 tracking-normal">FC</span>
                   </h2>
                   
-                  <div id="admin-pool-edit" class="hidden mb-4 relative z-10 w-full max-w-[200px]">
+                  <div id="admin-pool-edit" class="hidden mb-4 relative z-10 w-full max-w-[240px]">
                       <button id="btn-edit-pool" class="text-[9px] w-full bg-red-950/50 border border-red-500/30 text-red-400 py-2 rounded-full uppercase tracking-widest font-black hover:bg-red-900/80 hover:text-white hover:border-red-500 transition-all flex items-center justify-center gap-1.5 shadow-[0_0_15px_rgba(220,38,38,0.2)]">
                         <i data-lucide="edit-3" class="w-3 h-3"></i> Modificar Pozo Global
                       </button>
-                      <div id="form-edit-pool" class="hidden flex w-full gap-2 bg-neutral-950/80 p-1 rounded-lg border border-red-500/50">
+                      <div id="form-edit-pool" class="hidden flex w-full gap-2 bg-neutral-950/80 p-1 rounded-lg border border-red-500/50 mt-2">
                         <input type="text" id="input-pool" class="flex-1 bg-transparent text-white text-xs text-center font-bold outline-none placeholder:text-neutral-600" placeholder="Ej: 5.0T">
                         <button id="btn-save-pool" class="bg-red-600 text-white p-1.5 rounded hover:bg-red-500 transition-colors"><i data-lucide="check" class="w-3.5 h-3.5"></i></button>
                         <button id="btn-cancel-pool" class="bg-neutral-800 text-white p-1.5 rounded hover:bg-neutral-700 transition-colors"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>
@@ -278,7 +294,7 @@
                          <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
                        </button>
                    </div>
-                   <div id="form-telegram-id" class="hidden flex gap-2">
+                   <div id="form-telegram-id" class="hidden flex gap-2 mt-2">
                        <input type="text" id="input-tg" class="flex-1 bg-neutral-950 border border-neutral-800 rounded-lg px-3 py-2 text-xs font-mono text-white outline-none focus:border-red-500" placeholder="Ej: -100123456789" />
                        <button id="btn-save-tg" class="bg-red-600 p-2 rounded-lg text-white font-black hover:bg-red-500"><i data-lucide="check" class="w-3.5 h-3.5"></i></button>
                        <button id="btn-cancel-tg" class="bg-neutral-800 p-2 rounded-lg text-white font-black hover:bg-neutral-700"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>
@@ -354,754 +370,1346 @@
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
-        import { getFirestore, collection, doc, setDoc, getDoc, getDocs, onSnapshot, addDoc, updateDoc, deleteDoc } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
+        import { getFirestore, collection, doc, setDoc, getDoc, updateDoc, onSnapshot, getDocs, deleteDoc } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
 
         // --- INICIALIZACIÓN ---
         lucide.createIcons();
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        
+        // --- SISTEMA DE SALAS (ROOMS) MULTIJUGADOR ---
+        const urlParams = new URLSearchParams(window.location.search);
+        let roomId = urlParams.get('room');
+        if (!roomId) {
+            roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
+            const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + '?room=' + roomId;
+            window.history.replaceState({path: newUrl}, '', newUrl);
+        }
+        document.getElementById('badge-room').innerText = `SALA: ${roomId}`;
+
+        // Configuración real de Firebase Inyectada Automáticamente en Canvas
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'danger-mines-global-elite';
 
         let app = null, auth = null, db = null, useFirebase = false;
-        try {
-            if (firebaseConfig && firebaseConfig.apiKey) {
-                app = initializeApp(firebaseConfig);
-                auth = getAuth(app);
-                db = getFirestore(app);
-                useFirebase = true;
-                console.log("🔥 Enlace táctico con Firebase establecido.");
-                document.getElementById('badge-cloud').classList.remove('hidden');
-            } else {
-                console.log("ℹ️ Firebase no configurado. Local DB activa.");
+        let firebaseUser = null;
+
+        const setupFirebase = async () => {
+            try {
+                const config = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+                if (config) {
+                    app = initializeApp(config);
+                    auth = getAuth(app);
+                    db = getFirestore(app);
+                    
+                    // REGLA CRÍTICA: Autenticar ANTES de cualquier consulta a Firestore
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+                    
+                    firebaseUser = auth.currentUser;
+                    useFirebase = true;
+                    console.log(`🔥 Enlace táctico con Firebase establecido. Sala Actual: ${roomId}`);
+                    document.getElementById('badge-cloud').classList.remove('hidden');
+                    document.getElementById('badge-local').classList.add('hidden');
+                } else {
+                    throw new Error("Sin configuración de nube. Corriendo en modo offline.");
+                }
+            } catch (err) {
+                console.warn("⚠️ Fallo Firebase. Local DB activa.", err);
                 document.getElementById('badge-local').classList.remove('hidden');
+                document.getElementById('badge-cloud').classList.add('hidden');
             }
-        } catch (err) {
-            console.warn("⚠️ Fallo Firebase. Local DB activa.");
-            document.getElementById('badge-local').classList.remove('hidden');
-        }
+        };
 
         // --- CONSTANTES Y ESTADO GLOBAL ---
-        const KEY_PROFILES = `danger_mines_${appId}_profiles`;
-        const KEY_HISTORY = `danger_mines_${appId}_history`;
-        const KEY_SETTINGS = `danger_mines_${appId}_settings`;
-        const KEY_SESSION = `danger_mines_${appId}_session`;
+        const KEY_PROFILES = `danger_mines_${roomId}_profiles`;
+        const KEY_HISTORY = `danger_mines_${roomId}_history`;
+        const KEY_SETTINGS = `danger_mines_${roomId}_settings`;
+        const KEY_SESSION = `danger_mines_${roomId}_session`;
 
         const PTS_WIN_BONUS = 100;    
         const PTS_LOSE_PENALTY = -100; 
         const PTS_PER_REVEAL = 5;      
         const FUSION_COIN_PRIZES = ["400B", "200B", "100B", "80B", "60B", "50B", "40B", "30B", "20B", "20B"];
-        const NUM_COLORS = ['', 'text-[#3b82f6]', 'text-[#22c55e]', 'text-[#ef4444]', 'text-[#9333ea]', 'text-[#7f1d1d]', 'text-[#14b8a6]', 'text-[#000000]', 'text-[#737373]'];
+        const NUM_COLORS = ['', 'text-blue-400', 'text-emerald-400', 'text-red-500', 'text-purple-400', 'text-amber-500', 'text-teal-400', 'text-pink-400', 'text-neutral-400'];
         const TELEGRAM_BOT_TOKEN = '8651057630:AAF32WgXsjvWhLP_q5mDhhdksQnkv2m4IE0';
 
-        // Inicialización Local Storage Fallback
+        // Inicializar datos en LocalStorage si no existen
         if (!localStorage.getItem(KEY_PROFILES)) {
             localStorage.setItem(KEY_PROFILES, JSON.stringify({
                 'drake cora': { username: 'Drake Cora', password: '123', balance: 9999, level: 10, uid: 'master' },
-                'vortex_agente': { username: 'Vortex_Agente', password: '123', balance: 1450, level: 4, uid: 'mock-1' }
+                'phantom operative': { username: 'Phantom Operative', password: 'intel', balance: 5400, level: 7, uid: 'p1' },
+                'cyber ghost': { username: 'Cyber Ghost', password: 'shadow', balance: 3200, level: 5, uid: 'p2' },
+                'apex hunter': { username: 'Apex Hunter', password: 'strike', balance: 1850, level: 3, uid: 'p3' }
             }));
         }
-        if (!localStorage.getItem(KEY_HISTORY)) localStorage.setItem(KEY_HISTORY, JSON.stringify([]));
-        if (!localStorage.getItem(KEY_SETTINGS)) localStorage.setItem(KEY_SETTINGS, JSON.stringify({ prizePool: '1.5T', telegramChatId: '' }));
+        if (!localStorage.getItem(KEY_HISTORY)) {
+            localStorage.setItem(KEY_HISTORY, JSON.stringify([
+                { id: '1', username: 'Phantom Operative', event: 'Completo Operación Lvl 6', pts: 130, date: new Date(Date.now() - 3600000).toLocaleString() },
+                { id: '2', username: 'Cyber Ghost', event: 'Mina detonada Lvl 4', pts: -100, date: new Date(Date.now() - 7200000).toLocaleString() },
+                { id: '3', username: 'Drake Cora', event: 'Completo Operación Lvl 10', pts: 250, date: new Date(Date.now() - 10800000).toLocaleString() }
+            ]));
+        }
+        if (!localStorage.getItem(KEY_SETTINGS)) {
+            localStorage.setItem(KEY_SETTINGS, JSON.stringify({ prizePool: '1.5T', telegramChatId: '' }));
+        }
 
         let state = {
-            user: null, profile: null,
-            authMode: 'login', rememberMe: true, showPassword: false,
-            activeTab: 'game', isMuted: false, globalHistory: [], allProfiles: [],
-            prizePool: '1.5T', telegramChatId: '',
-            gameState: 'idle', sessionTime: 0, sessionPoints: 0, minesBoard: [], flagMode: false, isFirstClick: true,
-            timerInterval: null
+            user: null, 
+            profile: null,
+            authMode: 'login', 
+            rememberMe: true, 
+            showPassword: false,
+            activeTab: 'game', 
+            isMuted: false, 
+            globalHistory: [], 
+            allProfiles: [],
+            prizePool: '1.5T', 
+            telegramChatId: '',
+            gameState: 'idle', 
+            sessionTime: 0, 
+            sessionPoints: 0, 
+            minesBoard: [], 
+            flagMode: false, 
+            isFirstClick: true,
+            timerInterval: null,
+            rows: 6,
+            cols: 6,
+            totalMines: 5
         };
 
-        // --- SISTEMA DE AUDIO ---
         let audioCtx = null;
         const initAudio = () => {
-            if (!audioCtx) { const AudioContext = window.AudioContext || window.webkitAudioContext; if (AudioContext) audioCtx = new AudioContext(); }
-            if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+            if (!audioCtx) { 
+                const AudioContext = window.AudioContext || window.webkitAudioContext; 
+                if (AudioContext) audioCtx = new AudioContext(); 
+            }
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
         };
 
         const playSound = (type) => {
-            if (state.isMuted || !audioCtx) return;
+            if (state.isMuted) return;
+            initAudio();
+            if (!audioCtx) return;
+            
             try {
-                const ctx = audioCtx; const t = ctx.currentTime;
+                const ctx = audioCtx; 
+                const t = ctx.currentTime;
+                
                 switch(type) {
                     case 'click': {
-                        const osc = ctx.createOscillator(); const gain = ctx.createGain();
-                        osc.frequency.setValueAtTime(400, t); osc.frequency.exponentialRampToValueAtTime(100, t + 0.1);
-                        gain.gain.setValueAtTime(0.1, t); gain.gain.linearRampToValueAtTime(0.01, t + 0.1);
-                        osc.connect(gain); gain.connect(ctx.destination); osc.start(); osc.stop(t + 0.1); break;
+                        const osc = ctx.createOscillator(); 
+                        const gain = ctx.createGain();
+                        osc.frequency.setValueAtTime(400, t); 
+                        osc.frequency.exponentialRampToValueAtTime(100, t + 0.08);
+                        gain.gain.setValueAtTime(0.08, t); 
+                        gain.gain.linearRampToValueAtTime(0.001, t + 0.08);
+                        osc.connect(gain); 
+                        gain.connect(ctx.destination); 
+                        osc.start(); 
+                        osc.stop(t + 0.08); 
+                        break;
                     }
-                    case 'blip': {
-                        const osc = ctx.createOscillator(); const gain = ctx.createGain();
-                        osc.type = 'square'; osc.frequency.setValueAtTime(800, t); gain.gain.setValueAtTime(0.05, t);
-                        gain.gain.exponentialRampToValueAtTime(0.01, t + 0.1); osc.connect(gain); gain.connect(ctx.destination); osc.start(); osc.stop(t + 0.1); break;
+                    case 'reveal': {
+                        const osc = ctx.createOscillator(); 
+                        const gain = ctx.createGain();
+                        osc.type = 'triangle';
+                        osc.frequency.setValueAtTime(600, t); 
+                        osc.frequency.exponentialRampToValueAtTime(1200, t + 0.12);
+                        gain.gain.setValueAtTime(0.05, t); 
+                        gain.gain.linearRampToValueAtTime(0.001, t + 0.12);
+                        osc.connect(gain); 
+                        gain.connect(ctx.destination); 
+                        osc.start(); 
+                        osc.stop(t + 0.12); 
+                        break;
                     }
-                    case 'explosion': {
-                        const bufferSize = ctx.sampleRate * 0.5; const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-                        const data = buffer.getChannelData(0); for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
-                        const noise = ctx.createBufferSource(); noise.buffer = buffer;
-                        const filter = ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.setValueAtTime(800, t); filter.frequency.exponentialRampToValueAtTime(50, t + 0.4);
-                        const gain = ctx.createGain(); gain.gain.setValueAtTime(0.5, t); gain.gain.exponentialRampToValueAtTime(0.01, t + 0.5);
-                        noise.connect(filter); filter.connect(gain); gain.connect(ctx.destination); noise.start(); break;
+                    case 'flag': {
+                        const osc = ctx.createOscillator(); 
+                        const gain = ctx.createGain();
+                        osc.type = 'sawtooth';
+                        osc.frequency.setValueAtTime(250, t); 
+                        osc.frequency.exponentialRampToValueAtTime(150, t + 0.1);
+                        gain.gain.setValueAtTime(0.06, t); 
+                        gain.gain.linearRampToValueAtTime(0.001, t + 0.1);
+                        osc.connect(gain); 
+                        gain.connect(ctx.destination); 
+                        osc.start(); 
+                        osc.stop(t + 0.1); 
+                        break;
                     }
                     case 'win': {
-                        const notes = [261.63, 329.63, 392.00, 523.25];
-                        notes.forEach((freq, index) => {
-                            const osc = ctx.createOscillator(); const gain = ctx.createGain();
-                            osc.type = 'sawtooth'; osc.frequency.setValueAtTime(freq, t + index * 0.1);
-                            gain.gain.setValueAtTime(0.1, t + index * 0.1); gain.gain.linearRampToValueAtTime(0.01, t + index * 0.1 + 0.2);
-                            osc.connect(gain); gain.connect(ctx.destination); osc.start(t + index * 0.1); osc.stop(t + index * 0.1 + 0.2);
-                        }); break;
+                        // Secuencia triunfal militar/electrónica
+                        [600, 750, 900, 1200].forEach((freq, idx) => {
+                            const osc = ctx.createOscillator();
+                            const gain = ctx.createGain();
+                            osc.type = 'sine';
+                            osc.frequency.setValueAtTime(freq, t + (idx * 0.1));
+                            gain.gain.setValueAtTime(0.1, t + (idx * 0.1));
+                            gain.gain.exponentialRampToValueAtTime(0.001, t + (idx * 0.1) + 0.25);
+                            osc.connect(gain);
+                            gain.connect(ctx.destination);
+                            osc.start(t + (idx * 0.1));
+                            osc.stop(t + (idx * 0.1) + 0.25);
+                        });
+                        break;
                     }
-                    case 'start': {
-                        const osc = ctx.createOscillator(); const gain = ctx.createGain();
-                        osc.frequency.setValueAtTime(440, t); osc.frequency.exponentialRampToValueAtTime(880, t + 0.2);
-                        gain.gain.setValueAtTime(0.1, t); gain.gain.linearRampToValueAtTime(0.01, t + 0.2);
-                        osc.connect(gain); gain.connect(ctx.destination); osc.start(); osc.stop(t + 0.2); break;
+                    case 'explosion': {
+                        // Sonido de explosión profunda utilizando ruido sintetizado
+                        const bufferSize = ctx.sampleRate * 1.5;
+                        const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+                        const data = buffer.getChannelData(0);
+                        for (let i = 0; i < bufferSize; i++) {
+                            data[i] = Math.random() * 2 - 1;
+                        }
+                        const noise = ctx.createBufferSource();
+                        noise.buffer = buffer;
+                        
+                        const filter = ctx.createBiquadFilter();
+                        filter.type = 'lowpass';
+                        filter.Q.setValueAtTime(8, t);
+                        filter.frequency.setValueAtTime(400, t);
+                        filter.frequency.exponentialRampToValueAtTime(10, t + 1.2);
+
+                        const gain = ctx.createGain();
+                        gain.gain.setValueAtTime(0.3, t);
+                        gain.gain.exponentialRampToValueAtTime(0.001, t + 1.2);
+
+                        noise.connect(filter);
+                        filter.connect(gain);
+                        gain.connect(ctx.destination);
+                        noise.start(t);
+                        noise.stop(t + 1.5);
+                        
+                        // Frecuencia baja de choque adicional
+                        const subOsc = ctx.createOscillator();
+                        const subGain = ctx.createGain();
+                        subOsc.frequency.setValueAtTime(80, t);
+                        subOsc.frequency.linearRampToValueAtTime(10, t + 0.8);
+                        subGain.gain.setValueAtTime(0.25, t);
+                        subGain.gain.exponentialRampToValueAtTime(0.001, t + 0.8);
+                        subOsc.connect(subGain);
+                        subGain.connect(ctx.destination);
+                        subOsc.start(t);
+                        subOsc.stop(t + 0.8);
+                        break;
                     }
                 }
-            } catch (e) {}
-        };
-
-        // --- BASE DE DATOS (HÍBRIDA) ---
-        const dbGetProfile = async (username) => {
-            const safe = username.trim().toLowerCase();
-            if (useFirebase) { try { const snap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'profiles', safe)); if (snap.exists()) return snap.data(); } catch (e) {} }
-            return JSON.parse(localStorage.getItem(KEY_PROFILES) || '{}')[safe] || null;
-        };
-        const dbSetProfile = async (username, data) => {
-            const safe = username.trim().toLowerCase();
-            if (useFirebase) { try { await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'profiles', safe), data); } catch (e) {} }
-            const profs = JSON.parse(localStorage.getItem(KEY_PROFILES) || '{}'); profs[safe] = data; localStorage.setItem(KEY_PROFILES, JSON.stringify(profs));
-        };
-        const dbDeleteProfile = async (username) => {
-            const safe = username.trim().toLowerCase();
-            if (useFirebase) { try { await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'profiles', safe)); } catch (e) {} }
-            const profs = JSON.parse(localStorage.getItem(KEY_PROFILES) || '{}'); delete profs[safe]; localStorage.setItem(KEY_PROFILES, JSON.stringify(profs));
-        };
-        const dbGetAllProfiles = async () => { 
-            if (useFirebase && state.user) {
-                try {
-                    const snap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'profiles'));
-                    return snap.docs.map(d => d.data());
-                } catch(e) { console.error("Error de sincronización de perfiles:", e); }
+            } catch (e) {
+                console.warn("Fallo al reproducir audio:", e);
             }
-            return Object.values(JSON.parse(localStorage.getItem(KEY_PROFILES) || '{}')); 
         };
 
-        // --- NOTIFICACIONES ---
-        const showNotification = (msg, bottom = false) => {
-            const el = bottom ? document.getElementById('notification-bottom') : document.getElementById('notification-container');
-            const msgEl = bottom ? document.getElementById('notification-msg-bottom') : document.getElementById('notification-msg');
-            msgEl.innerText = msg;
-            el.classList.remove('hidden');
-            setTimeout(() => el.classList.add('hidden'), 3000);
+        const showNotify = (msg, persistent = false, type = 'top') => {
+            if (type === 'top') {
+                const container = document.getElementById('notification-container');
+                const msgEl = document.getElementById('notification-msg');
+                msgEl.innerText = msg;
+                container.classList.remove('hidden');
+                if (!persistent) {
+                    setTimeout(() => container.classList.add('hidden'), 2500);
+                }
+            } else {
+                const container = document.getElementById('notification-bottom');
+                const msgEl = document.getElementById('notification-msg-bottom');
+                msgEl.innerText = msg;
+                container.classList.remove('hidden');
+                if (!persistent) {
+                    setTimeout(() => container.classList.add('hidden'), 3500);
+                }
+            }
         };
 
-        const sendTelegramNotification = async (message) => {
-            if (!state.telegramChatId || !TELEGRAM_BOT_TOKEN) return;
+        const hideNotify = (type = 'top') => {
+            if (type === 'top') {
+                document.getElementById('notification-container').classList.add('hidden');
+            } else {
+                document.getElementById('notification-bottom').classList.add('hidden');
+            }
+        };
+
+        const saveState = async () => {
+            // Guardar perfil del usuario
+            if (state.profile) {
+                const profiles = JSON.parse(localStorage.getItem(KEY_PROFILES) || '{}');
+                profiles[state.profile.username.toLowerCase()] = state.profile;
+                localStorage.setItem(KEY_PROFILES, JSON.stringify(profiles));
+                
+                if (useFirebase && firebaseUser) {
+                    try {
+                        await setDoc(doc(db, 'artifacts', appId, 'public', 'data', roomId + '_profiles', state.profile.username.toLowerCase()), state.profile);
+                    } catch (err) {
+                        console.error("Fallo guardar nube:", err);
+                    }
+                }
+            }
+
+            // Guardar Historial
+            localStorage.setItem(KEY_HISTORY, JSON.stringify(state.globalHistory));
+            if (useFirebase && firebaseUser) {
+                try {
+                    await setDoc(doc(db, 'artifacts', appId, 'public', 'data', roomId + '_settings', 'global_history'), { logs: state.globalHistory });
+                } catch (err) {
+                    console.error("Fallo guardar historial nube:", err);
+                }
+            }
+
+            // Guardar Configuración General
+            const settingsObj = { prizePool: state.prizePool, telegramChatId: state.telegramChatId };
+            localStorage.setItem(KEY_SETTINGS, JSON.stringify(settingsObj));
+            if (useFirebase && firebaseUser) {
+                try {
+                    await setDoc(doc(db, 'artifacts', appId, 'public', 'data', roomId + '_settings', 'app_config'), settingsObj);
+                } catch (err) {
+                    console.error("Fallo guardar settings nube:", err);
+                }
+            }
+
+            updateUI();
+        };
+
+        const loadAllData = async () => {
+            if (useFirebase && firebaseUser) {
+                try {
+                    // Obtener configuración global
+                    const configSnap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', roomId + '_settings', 'app_config'));
+                    if (configSnap.exists()) {
+                        const data = configSnap.data();
+                        state.prizePool = data.prizePool || '1.5T';
+                        state.telegramChatId = data.telegramChatId || '';
+                    }
+
+                    // Obtener historial global
+                    const histSnap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', roomId + '_settings', 'global_history'));
+                    if (histSnap.exists()) {
+                        state.globalHistory = histSnap.data().logs || [];
+                    } else {
+                        state.globalHistory = JSON.parse(localStorage.getItem(KEY_HISTORY) || '[]');
+                    }
+                } catch (err) {
+                    console.error("Fallo cargar nube, usando local:", err);
+                    fallbackLocalData();
+                }
+            } else {
+                fallbackLocalData();
+            }
+            updateUI();
+        };
+
+        const fallbackLocalData = () => {
+            state.globalHistory = JSON.parse(localStorage.getItem(KEY_HISTORY) || '[]');
+            const settings = JSON.parse(localStorage.getItem(KEY_SETTINGS) || '{}');
+            state.prizePool = settings.prizePool || '1.5T';
+            state.telegramChatId = settings.telegramChatId || '';
+        };
+
+        // Escucha en vivo de perfiles si Firebase está activo
+        const setupFirebaseSync = () => {
+            if (!useFirebase || !firebaseUser) {
+                // Sincronización simulada local
+                state.allProfiles = Object.values(JSON.parse(localStorage.getItem(KEY_PROFILES) || '{}'));
+                return;
+            }
             try {
-                await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: state.telegramChatId, text: message, parse_mode: 'Markdown' }) });
-            } catch (err) {}
-        };
-
-        // --- INICIALIZACIÓN Y SESIÓN ---
-        const initSystem = async () => {
-            if (useFirebase) {
-                try {
-                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) await signInWithCustomToken(auth, __initial_auth_token);
-                    else await signInAnonymously(auth);
-                } catch (e) {}
-                onAuthStateChanged(auth, (currentUser) => {
-                    state.user = currentUser;
-                    checkSavedSession();
-                    setupFirestoreListeners();
-                });
-            } else {
-                state.user = { uid: 'offline-agent' };
-                checkSavedSession();
-                loadLocalData();
-            }
-        };
-
-        const checkSavedSession = async () => {
-            const saved = localStorage.getItem(KEY_SESSION);
-            if (saved) {
-                try {
-                    const { username, password } = JSON.parse(saved);
-                    const localProf = await dbGetProfile(username);
-                    if (localProf && localProf.password === password) {
-                        state.profile = localProf;
-                        renderApp();
+                // Para mantener el historial actualizado en vivo
+                onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', roomId + '_settings', 'global_history'), (snap) => {
+                    if (snap.exists()) {
+                        state.globalHistory = snap.data().logs || [];
+                        renderHistory();
                     }
-                } catch (e) {}
-            }
-            document.getElementById('loading-screen').classList.add('hidden');
-            if (!state.profile) {
-                document.getElementById('auth-screen').classList.remove('hidden');
-                document.getElementById('app-screen').classList.add('hidden');
+                }, (err) => console.error("Sync history error:", err));
+                
+                // Actualizar pozo y Telegram en vivo
+                onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', roomId + '_settings', 'app_config'), (snap) => {
+                    if (snap.exists()) {
+                        const d = snap.data();
+                        state.prizePool = d.prizePool || '1.5T';
+                        state.telegramChatId = d.telegramChatId || '';
+                        document.getElementById('prize-pool-display').innerText = state.prizePool;
+                        document.getElementById('display-telegram-id').innerText = state.telegramChatId || 'Sin Configurar';
+                    }
+                }, (err) => console.error("Sync config error:", err));
+
+                // Sincronización de todos los perfiles de la sala en tiempo real (para Rankings Multi-Agente)
+                onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', roomId + '_profiles'), (snap) => {
+                    const profiles = [];
+                    snap.forEach(document => profiles.push(document.data()));
+                    if (profiles.length > 0) {
+                        state.allProfiles = profiles;
+                        
+                        // Reflejar localmente para copias de seguridad
+                        const localProfiles = JSON.parse(localStorage.getItem(KEY_PROFILES) || '{}');
+                        profiles.forEach(p => localProfiles[p.username.toLowerCase()] = p);
+                        localStorage.setItem(KEY_PROFILES, JSON.stringify(localProfiles));
+                        
+                        renderRanking();
+                        renderAdminPanel();
+                    }
+                }, (err) => console.error("Sync profiles error:", err));
+
+            } catch (err) {
+                console.warn("Fallo al establecer sincronización de Firebase en vivo:", err);
             }
         };
 
-        const setupFirestoreListeners = () => {
-            if (!useFirebase || !state.user) return;
-            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'history'), (snap) => {
-                const hist = snap.docs.map(doc => ({ id: doc.id, ...doc.data() })).sort((a, b) => b.timestamp - a.timestamp);
-                state.globalHistory = hist;
-                if(state.profile) { renderHistory(); renderRanking(); }
-            }, (error) => { console.warn("Fallback a historial local", error); loadLocalData(); });
+        const handleAuth = async (e) => {
+            e.preventDefault();
+            playSound('click');
             
-            onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'global'), (docSnap) => {
-                if (docSnap.exists()) {
-                    const d = docSnap.data();
-                    if (d.prizePool) state.prizePool = d.prizePool;
-                    if (d.telegramChatId) state.telegramChatId = d.telegramChatId;
-                    if(state.profile) renderSettingsUI();
+            const btnSubmit = document.getElementById('auth-submit-btn');
+            const btnIcon = document.getElementById('auth-btn-icon');
+            const btnText = document.getElementById('auth-btn-text');
+            
+            // UI Feedback
+            btnSubmit.disabled = true;
+            btnText.innerText = "Verificando Credenciales...";
+            btnIcon.setAttribute('data-lucide', 'loader');
+            lucide.createIcons();
+
+            const usernameInput = document.getElementById('auth-username').value.trim();
+            const passwordInput = document.getElementById('auth-password').value.trim();
+            const lowerUsername = usernameInput.toLowerCase();
+
+            if (!usernameInput || !passwordInput) {
+                showNotify("Identificador y clave requeridos.");
+                resetAuthBtn();
+                return;
+            }
+
+            // Cargar perfiles guardados localmente
+            const localProfiles = JSON.parse(localStorage.getItem(KEY_PROFILES) || '{}');
+            let matchedProfile = localProfiles[lowerUsername];
+
+            if (useFirebase && firebaseUser) {
+                try {
+                    const snap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', roomId + '_profiles', lowerUsername));
+                    if (snap.exists()) {
+                        matchedProfile = snap.data();
+                    }
+                } catch (err) {
+                    console.log("Fallo consulta Firebase auth, usando local:", err);
                 }
-            }, (error) => { console.warn("Fallback a settings locales", error); loadLocalData(); });
-        };
-
-        const loadLocalData = () => {
-            const hist = JSON.parse(localStorage.getItem(KEY_HISTORY) || '[]').sort((a, b) => b.timestamp - a.timestamp);
-            state.globalHistory = hist;
-            const sett = JSON.parse(localStorage.getItem(KEY_SETTINGS) || '{}');
-            if (sett.prizePool) state.prizePool = sett.prizePool;
-            if (sett.telegramChatId) state.telegramChatId = sett.telegramChatId;
-            if (state.profile) { renderHistory(); renderRanking(); renderSettingsUI(); }
-        };
-
-        // --- UI UPDATERS ---
-        const renderApp = () => {
-            document.getElementById('auth-screen').classList.add('hidden');
-            document.getElementById('app-screen').classList.remove('hidden');
-            document.getElementById('app-screen').style.display = 'flex';
-            
-            updateHeader();
-            
-            // Admin Panel Visibility
-            if (state.profile.username === 'Drake Cora') {
-                document.getElementById('nav-panel').classList.remove('hidden');
-                document.getElementById('admin-pool-edit').classList.remove('hidden');
-                loadAllProfiles();
-            } else {
-                document.getElementById('nav-panel').classList.add('hidden');
-                document.getElementById('admin-pool-edit').classList.add('hidden');
-                if(state.activeTab === 'panel') switchTab('game');
             }
-            
-            switchTab(state.activeTab);
-            updateGameUI();
-            renderHistory();
-            renderRanking();
-            renderSettingsUI();
+
+            if (state.authMode === 'login') {
+                if (matchedProfile && matchedProfile.password === passwordInput) {
+                    executeLogin(matchedProfile);
+                } else {
+                    showNotify("Credenciales Inválidas u Operativo no Encontrado.");
+                    playSound('explosion');
+                    resetAuthBtn();
+                }
+            } else {
+                // Registrar nuevo recluta
+                if (matchedProfile) {
+                    showNotify("Identificador de Agente ya reservado.");
+                    resetAuthBtn();
+                } else {
+                    const newProfile = {
+                        username: usernameInput,
+                        password: passwordInput,
+                        balance: 100, // Recluta inicial con 100 puntos de soporte
+                        level: 1,
+                        uid: useFirebase ? 'cloud-' + Math.random().toString(36).substr(2, 9) : 'local-' + Math.random().toString(36).substr(2, 9)
+                    };
+                    
+                    // Almacenar localmente
+                    localProfiles[lowerUsername] = newProfile;
+                    localStorage.setItem(KEY_PROFILES, JSON.stringify(localProfiles));
+                    
+                    if (useFirebase && firebaseUser) {
+                        try {
+                            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', roomId + '_profiles', lowerUsername), newProfile);
+                        } catch (err) {
+                            console.error("Fallo registro en nube:", err);
+                        }
+                    }
+
+                    // Notificar por Telegram de nuevo recluta si está configurado
+                    sendTelegramAlert(`🆕 *NUEVO RECLUTA ENLISTADO*\n\n👤 *Operativo:* \`${usernameInput}\`\n🎖️ *Rango Inicial:* Nivel 1\n💳 *Soporte:* 100 PTS`);
+
+                    showNotify("Enlace Táctico Creado con Éxito.");
+                    executeLogin(newProfile);
+                }
+            }
+        };
+
+        const resetAuthBtn = () => {
+            const btnSubmit = document.getElementById('auth-submit-btn');
+            const btnIcon = document.getElementById('auth-btn-icon');
+            const btnText = document.getElementById('auth-btn-text');
+            btnSubmit.disabled = false;
+            btnText.innerText = state.authMode === 'login' ? "Iniciar Secuencia" : "Completar Registro";
+            btnIcon.setAttribute('data-lucide', state.authMode === 'login' ? 'log-in' : 'user-plus');
             lucide.createIcons();
         };
 
-        const updateHeader = () => {
-            document.getElementById('header-username').innerText = state.profile.username;
-            const bal = state.gameState === 'playing' ? state.profile.balance + state.sessionPoints : state.profile.balance;
-            document.getElementById('header-balance').innerText = `${Math.round(bal)} PTS`;
-            const hc = document.getElementById('header-balance-container');
-            if (bal < 0) { hc.classList.add('border-red-900/60'); document.getElementById('header-balance').classList.replace('text-yellow-400', 'text-red-500'); }
-            else { hc.classList.remove('border-red-900/60'); document.getElementById('header-balance').classList.replace('text-red-500', 'text-yellow-400'); }
-        };
-
-        const switchTab = (tab) => {
-            state.activeTab = tab;
-            ['game', 'history', 'ranking', 'panel'].forEach(t => {
-                const el = document.getElementById(`tab-${t}`);
-                if(el) { t === tab ? el.classList.remove('hidden') : el.classList.add('hidden'); }
-            });
+        const executeLogin = (profile) => {
+            state.profile = profile;
+            state.user = { displayName: profile.username };
             
-            document.querySelectorAll('.nav-btn').forEach(btn => {
-                const t = btn.getAttribute('data-tab');
-                const icon = btn.querySelector('.icon-active');
-                if (t === tab) {
-                    btn.classList.replace('text-neutral-600', t==='game'||t==='history'?'text-white':'text-red-500');
-                    btn.classList.remove('hover:text-neutral-400');
-                    if(t!=='game'&&t!=='history') icon.classList.add('drop-shadow-[0_0_10px_rgba(239,68,68,0.5)]');
-                    if(t==='game') icon.classList.add('text-red-500');
-                } else {
-                    btn.classList.replace('text-white', 'text-neutral-600');
-                    btn.classList.replace('text-red-500', 'text-neutral-600');
-                    btn.classList.add('hover:text-neutral-400');
-                    icon.classList.remove('drop-shadow-[0_0_10px_rgba(239,68,68,0.5)]');
-                    icon.classList.remove('text-red-500');
-                }
+            if (state.rememberMe) {
+                localStorage.setItem(KEY_SESSION, JSON.stringify(profile));
+            }
+
+            // Mostrar App Screen y actualizar encabezados
+            document.getElementById('auth-screen').classList.add('hidden');
+            document.getElementById('app-screen').classList.remove('hidden');
+            
+            showNotify(`Operación Autorizada: Bienvenido Agente ${profile.username}`, false, 'bottom');
+            
+            // Validar si es el súper panel de Drake Cora
+            if (profile.username.toLowerCase() === 'drake cora') {
+                document.getElementById('nav-panel').classList.remove('hidden');
+                document.getElementById('admin-pool-edit').classList.remove('hidden');
+            } else {
+                document.getElementById('nav-panel').classList.add('hidden');
+                document.getElementById('admin-pool-edit').classList.add('hidden');
+            }
+
+            loadAllData().then(() => {
+                setupFirebaseSync();
+                // Forzar sincronización de perfiles locales a estatales
+                state.allProfiles = Object.values(JSON.parse(localStorage.getItem(KEY_PROFILES) || '{}'));
+                updateUI();
+                initMinesGame();
             });
         };
 
-        // --- LÓGICA DE JUEGO ---
-        const getLevel = () => state.profile?.level || 1;
-        const getBoardConfig = () => {
-            const l = getLevel();
-            if (l <= 3) return { r: 8, c: 8, m: 8 + l * 2 }; 
-            if (l <= 6) return { r: 10, c: 10, m: 10 + l * 3 }; 
-            if (l <= 9) return { r: 12, c: 12, m: 15 + l * 3 }; 
-            return { r: 16, c: 16, m: 30 + l * 4 }; 
-        };
-
-        const startGame = () => {
-            initAudio(); playSound('start');
-            state.sessionTime = 0; state.sessionPoints = 0; state.gameState = 'playing'; state.isFirstClick = true; state.flagMode = false;
-            const cfg = getBoardConfig();
-            state.minesBoard = Array(cfg.r).fill(null).map((_, r) => Array(cfg.c).fill(null).map((_, c) => ({ row: r, col: c, isMine: false, isRevealed: false, isFlagged: false, neighborMines: 0 })));
-            
+        const initMinesGame = () => {
             clearInterval(state.timerInterval);
-            state.timerInterval = setInterval(() => { state.sessionTime++; updateGameHeader(); }, 1000);
+            state.gameState = 'idle';
+            state.sessionTime = 0;
+            state.sessionPoints = 0;
+            state.flagMode = false;
+            state.isFirstClick = true;
+            state.minesBoard = [];
+
+            // Calcular tamaño dinámico de la cuadrícula basado en el nivel
+            const lvl = state.profile ? state.profile.level : 1;
+            // Configuración progresiva:
+            // Lvl 1: 5x5 - 3 minas
+            // Lvl 5: 7x7 - 8 minas
+            // Lvl 10: 10x10 - 20 minas
+            state.rows = Math.min(4 + Math.ceil(lvl * 0.6), 11);
+            state.cols = Math.min(4 + Math.ceil(lvl * 0.6), 11);
+            state.totalMines = Math.min(2 + Math.ceil(lvl * 1.8), 35);
+
+            document.getElementById('game-level').innerText = `Nivel ${lvl}`;
+            document.getElementById('game-mines-left').innerText = state.totalMines;
+            document.getElementById('game-session-points').innerText = `+0 PTS`;
+            document.getElementById('game-session-points').className = "flex items-center gap-1.5 px-3 py-1.5 border-r border-neutral-800 font-black text-neutral-500";
+            document.getElementById('game-time').innerText = '0';
             
+            document.getElementById('game-controls-idle').classList.remove('hidden');
+            document.getElementById('game-controls-playing').classList.add('hidden');
+            document.getElementById('game-controls-ended').classList.add('hidden');
             document.getElementById('result-overlay').classList.add('hidden');
-            document.getElementById('mines-standby').classList.add('hidden');
-            document.getElementById('mines-grid').classList.remove('hidden');
             
-            updateGameUI();
-            renderBoard();
+            document.getElementById('mines-grid').classList.add('hidden');
+            document.getElementById('mines-standby').classList.remove('hidden');
         };
 
-        const endGame = async (msg, pts, isWin) => {
+        const startOperation = () => {
+            playSound('click');
+            state.gameState = 'playing';
+            state.isFirstClick = true;
+            
+            document.getElementById('game-controls-idle').classList.add('hidden');
+            document.getElementById('game-controls-playing').classList.remove('hidden');
+            document.getElementById('mines-standby').classList.add('hidden');
+            
+            const gridEl = document.getElementById('mines-grid');
+            gridEl.classList.remove('hidden');
+
+            // Inicializar matriz de la rejilla vacía
+            state.minesBoard = [];
+            for (let r = 0; r < state.rows; r++) {
+                const row = [];
+                for (let c = 0; c < state.cols; c++) {
+                    row.push({
+                        r, c,
+                        isMine: false,
+                        isRevealed: false,
+                        isFlagged: false,
+                        neighborMines: 0
+                    });
+                }
+                state.minesBoard.push(row);
+            }
+
+            renderGrid();
+            startTimer();
+            setMode('dig');
+        };
+
+        const startTimer = () => {
             clearInterval(state.timerInterval);
-            state.gameState = isWin ? 'won' : 'lost';
-            state.sessionPoints = pts;
+            state.timerInterval = setInterval(() => {
+                state.sessionTime++;
+                document.getElementById('game-time').innerText = state.sessionTime;
+            }, 1000);
+        };
+
+        const setMode = (mode) => {
+            playSound('click');
+            const digBtn = document.getElementById('btn-mode-dig');
+            const flagBtn = document.getElementById('btn-mode-flag');
             
-            const newBal = Math.round(state.profile.balance + pts);
-            let newLvl = state.profile.level || 1; if(isWin) newLvl++;
-            state.profile.balance = newBal; state.profile.level = newLvl;
-            await dbSetProfile(state.profile.username, state.profile);
+            if (mode === 'dig') {
+                state.flagMode = false;
+                digBtn.className = "flex-1 rounded-xl font-black text-[10px] uppercase tracking-wider flex justify-center items-center gap-1.5 transition-all bg-red-600 text-white shadow-inner py-3";
+                flagBtn.className = "flex-1 rounded-xl font-black text-[10px] uppercase tracking-wider flex justify-center items-center gap-1.5 transition-all bg-neutral-950 text-neutral-500 border border-neutral-800 py-3";
+            } else {
+                state.flagMode = true;
+                flagBtn.className = "flex-1 rounded-xl font-black text-[10px] uppercase tracking-wider flex justify-center items-center gap-1.5 transition-all bg-red-600 text-white shadow-inner py-3";
+                digBtn.className = "flex-1 rounded-xl font-black text-[10px] uppercase tracking-wider flex justify-center items-center gap-1.5 transition-all bg-neutral-950 text-neutral-500 border border-neutral-800 py-3";
+            }
+        };
 
-            const log = { id: 'log-'+Date.now(), username: state.profile.username, game: 'mines', result: msg, amount: Math.round(pts), time: new Date().toLocaleTimeString(), timestamp: Date.now() };
-            if (useFirebase) { try { await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'history'), log); } catch(e){} }
+        const plantMinesAndCalculate = (firstR, firstC) => {
+            let minesPlanted = 0;
+            while (minesPlanted < state.totalMines) {
+                const r = Math.floor(Math.random() * state.rows);
+                const c = Math.floor(Math.random() * state.cols);
+                
+                // Asegurar que no plantamos en la posición del primer clic ni en sus adyacentes inmediatas
+                const isSafeZone = Math.abs(r - firstR) <= 1 && Math.abs(c - firstC) <= 1;
+                
+                if (!state.minesBoard[r][c].isMine && !isSafeZone) {
+                    state.minesBoard[r][c].isMine = true;
+                    minesPlanted++;
+                }
+            }
+
+            // Calcular números vecinos
+            for (let r = 0; r < state.rows; r++) {
+                for (let c = 0; c < state.cols; c++) {
+                    if (state.minesBoard[r][c].isMine) continue;
+                    let count = 0;
+                    for (let dr = -1; dr <= 1; dr++) {
+                        for (let dc = -1; dc <= 1; dc++) {
+                            const nr = r + dr;
+                            const nc = c + dc;
+                            if (nr >= 0 && nr < state.rows && nc >= 0 && nc < state.cols) {
+                                if (state.minesBoard[nr][nc].isMine) count++;
+                            }
+                        }
+                    }
+                    state.minesBoard[r][c].neighborMines = count;
+                }
+            }
+        };
+
+        const renderGrid = () => {
+            const gridEl = document.getElementById('mines-grid');
+            gridEl.innerHTML = '';
             
-            const localHist = JSON.parse(localStorage.getItem(KEY_HISTORY) || '[]'); localHist.unshift(log);
-            localStorage.setItem(KEY_HISTORY, JSON.stringify(localHist.slice(0, 100)));
-            state.globalHistory = localHist;
+            // Establecer columnas responsivas dinámicamente
+            gridEl.style.gridTemplateColumns = `repeat(${state.cols}, minmax(0, 1fr))`;
+            
+            // Estilo adaptable de tamaño según columnas
+            const cellSizeClass = state.cols > 8 
+                ? 'w-8 h-8 text-[11px] font-black rounded-lg' 
+                : 'w-10 h-10 text-xs font-black rounded-xl';
 
-            if (isWin) { playSound('win'); showNotification(`¡Despejado! +${pts} PTS`); sendTelegramNotification(`🏆 *¡OPERACIÓN EXITOSA!*\n👤 *Agente:* \`${state.profile.username}\`\n⭐ *Nuevo Nivel:* ${newLvl}\n💰 *Puntos:* +${pts} PTS`); }
-            else { playSound('explosion'); showNotification(`¡KABOOM! ${pts>0?'+':''}${pts} PTS`); }
+            for (let r = 0; r < state.rows; r++) {
+                for (let c = 0; c < state.cols; c++) {
+                    const cell = state.minesBoard[r][c];
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = `${cellSizeClass} flex items-center justify-center transition-all border border-neutral-800 focus:outline-none `;
+                    
+                    // Manejar interacciones táctiles y clics estándar
+                    btn.addEventListener('click', () => handleCellClick(r, c));
+                    btn.addEventListener('contextmenu', (e) => {
+                        e.preventDefault();
+                        toggleFlag(r, c);
+                    });
 
-            updateGameUI(); updateHeader(); renderBoard(); showResultOverlay(isWin); renderHistory(); renderRanking();
+                    if (cell.isRevealed) {
+                        btn.className += " bg-neutral-950 border-neutral-900";
+                        if (cell.isMine) {
+                            btn.innerHTML = `<i data-lucide="bomb" class="w-4 h-4 text-red-500 fill-red-500 animate-pulse"></i>`;
+                            btn.className += " bg-red-950/40 border-red-900/60";
+                        } else if (cell.neighborMines > 0) {
+                            btn.innerText = cell.neighborMines;
+                            btn.className += ` ${NUM_COLORS[cell.neighborMines]}`;
+                        } else {
+                            btn.innerText = '';
+                        }
+                    } else if (cell.isFlagged) {
+                        btn.innerHTML = `<i data-lucide="flag" class="w-3.5 h-3.5 text-yellow-500 fill-yellow-500"></i>`;
+                        btn.className += " bg-neutral-900 border-neutral-800 shadow-md";
+                    } else {
+                        btn.className += " bg-neutral-900 hover:bg-neutral-800 active:scale-95 text-transparent border-neutral-800/80";
+                    }
+
+                    gridEl.appendChild(btn);
+                }
+            }
+            lucide.createIcons();
         };
 
         const handleCellClick = (r, c) => {
             if (state.gameState !== 'playing') return;
-            initAudio();
-            let b = state.minesBoard;
-            if (state.flagMode && !b[r][c].isRevealed) { toggleFlag(r, c); return; }
-            
-            const cfg = getBoardConfig();
+            const cell = state.minesBoard[r][c];
+            if (cell.isRevealed) return;
 
-            if (b[r][c].isRevealed) {
-                if (b[r][c].neighborMines > 0) {
-                    let flags = 0;
-                    for(let dr=-1; dr<=1; dr++) for(let dc=-1; dc<=1; dc++) { const nr=r+dr, nc=c+dc; if(nr>=0 && nr<cfg.r && nc>=0 && nc<cfg.c && b[nr][nc].isFlagged) flags++; }
-                    if (flags === b[r][c].neighborMines) {
-                        let det=false, revAny=false; const revB = b.flat().filter(x=>x.isRevealed).length;
-                        const rec = (rr,cc) => {
-                            if(rr<0 || rr>=cfg.r || cc<0 || cc>=cfg.c) return;
-                            if(b[rr][cc].isRevealed || b[rr][cc].isFlagged) return;
-                            if(b[rr][cc].isMine) { det=true; b[rr][cc].isRevealed=true; return; }
-                            b[rr][cc].isRevealed=true; revAny=true;
-                            if(b[rr][cc].neighborMines===0) { for(let ddr=-1; ddr<=1; ddr++) for(let ddc=-1; ddc<=1; ddc++) rec(rr+ddr,cc+ddc); }
-                        };
-                        for(let dr=-1; dr<=1; dr++) for(let dc=-1; dc<=1; dc++) rec(r+dr, c+dc);
-                        
-                        if (det) { b.forEach(row=>row.forEach(cell=>{if(cell.isMine) cell.isRevealed=true;})); endGame('Error Táctico (Mina)', state.sessionPoints + PTS_LOSE_PENALTY, false); if(navigator.vibrate) navigator.vibrate([100,50,100]); return; }
-                        if (revAny) {
-                            const revA = b.flat().filter(x=>x.isRevealed).length; state.sessionPoints += ((revA-revB)*PTS_PER_REVEAL);
-                            playSound('click'); checkWin(); renderBoard(); updateGameHeader(); updateHeader();
-                        }
-                    }
-                }
+            if (state.flagMode) {
+                toggleFlag(r, c);
                 return;
             }
 
-            if (b[r][c].isFlagged) return;
+            if (cell.isFlagged) return;
 
+            // Primer clic seguro
             if (state.isFirstClick) {
-                const forb = new Set(); for(let dr=-1; dr<=1; dr++) for(let dc=-1; dc<=1; dc++) forb.add(`${r+dr},${c+dc}`);
-                let placed = 0;
-                while(placed < cfg.m) { let rr=Math.floor(Math.random()*cfg.r), cc=Math.floor(Math.random()*cfg.c); if(!b[rr][cc].isMine && !forb.has(`${rr},${cc}`)) { b[rr][cc].isMine=true; placed++; } }
-                for(let rr=0; rr<cfg.r; rr++) for(let cc=0; cc<cfg.c; cc++) {
-                    if(!b[rr][cc].isMine) {
-                        let count=0; for(let dr=-1; dr<=1; dr++) for(let dc=-1; dc<=1; dc++) { if(rr+dr>=0 && rr+dr<cfg.r && cc+dc>=0 && cc+dc<cfg.c && b[rr+dr][cc+dc].isMine) count++; }
-                        b[rr][cc].neighborMines = count;
-                    }
-                }
                 state.isFirstClick = false;
+                plantMinesAndCalculate(r, c);
             }
 
-            if (b[r][c].isMine) {
-                b.forEach(row=>row.forEach(cell=>{if(cell.isMine) cell.isRevealed=true;}));
-                endGame('Mina Detonada', state.sessionPoints + PTS_LOSE_PENALTY, false);
-                if(navigator.vibrate) navigator.vibrate([100,50,100]); return;
+            if (cell.isMine) {
+                detonateMines(r, c);
+            } else {
+                revealCell(r, c);
+                playSound('reveal');
+                renderGrid();
+                checkWinCondition();
             }
-
-            const recRev = (rr,cc) => {
-                if(rr<0 || rr>=cfg.r || cc<0 || cc>=cfg.c) return;
-                if(b[rr][cc].isRevealed || b[rr][cc].isFlagged || b[rr][cc].isMine) return;
-                b[rr][cc].isRevealed=true;
-                if(b[rr][cc].neighborMines===0) { for(let dr=-1; dr<=1; dr++) for(let dc=-1; dc<=1; dc++) recRev(rr+dr, cc+dc); }
-            };
-
-            const revB = b.flat().filter(x=>x.isRevealed).length;
-            recRev(r,c);
-            const revA = b.flat().filter(x=>x.isRevealed).length;
-            state.sessionPoints += ((revA-revB)*PTS_PER_REVEAL);
-            
-            playSound('click'); checkWin(); renderBoard(); updateGameHeader(); updateHeader();
         };
 
         const toggleFlag = (r, c) => {
             if (state.gameState !== 'playing') return;
-            if (!state.minesBoard[r][c].isRevealed) {
-                state.minesBoard[r][c].isFlagged = !state.minesBoard[r][c].isFlagged;
-                playSound('blip'); if(navigator.vibrate) navigator.vibrate(15);
-                renderBoard(); updateGameHeader();
-            }
-        };
-
-        const checkWin = () => {
-            const cfg = getBoardConfig(); const revCount = state.minesBoard.flat().filter(x=>x.isRevealed).length;
-            if (revCount === (cfg.r * cfg.c) - cfg.m) endGame(`Nivel ${getLevel()} Despejado`, state.sessionPoints + PTS_WIN_BONUS, true);
-        };
-
-        // --- RENDERERS ---
-        const updateGameUI = () => {
-            document.getElementById('game-level').innerText = `Nivel ${getLevel()}`;
-            document.getElementById('game-controls-idle').classList.toggle('hidden', state.gameState !== 'idle');
-            document.getElementById('game-controls-playing').classList.toggle('hidden', state.gameState !== 'playing');
-            document.getElementById('game-controls-ended').classList.toggle('hidden', state.gameState === 'idle' || state.gameState === 'playing');
+            const cell = state.minesBoard[r][c];
+            if (cell.isRevealed) return;
             
-            const btnDig = document.getElementById('btn-mode-dig');
-            const btnFlag = document.getElementById('btn-mode-flag');
-            if(state.flagMode) {
-                btnFlag.className = "flex-1 rounded-xl font-black text-[10px] uppercase tracking-wider flex justify-center items-center gap-1.5 transition-all bg-yellow-600 text-white shadow-inner";
-                btnDig.className = "flex-1 rounded-xl font-black text-[10px] uppercase tracking-wider flex justify-center items-center gap-1.5 transition-all bg-neutral-950 text-neutral-500 border border-neutral-800";
-            } else {
-                btnDig.className = "flex-1 rounded-xl font-black text-[10px] uppercase tracking-wider flex justify-center items-center gap-1.5 transition-all bg-red-600 text-white shadow-inner";
-                btnFlag.className = "flex-1 rounded-xl font-black text-[10px] uppercase tracking-wider flex justify-center items-center gap-1.5 transition-all bg-neutral-950 text-neutral-500 border border-neutral-800";
-            }
-            updateGameHeader();
+            cell.isFlagged = !cell.isFlagged;
+            playSound('flag');
+            
+            // Actualizar contador
+            const currentFlags = state.minesBoard.flat().filter(x => x.isFlagged).length;
+            document.getElementById('game-mines-left').innerText = Math.max(0, state.totalMines - currentFlags);
+            
+            renderGrid();
         };
 
-        const updateGameHeader = () => {
-            const cfg = getBoardConfig();
-            let flags = 0; state.minesBoard.forEach(r => r.forEach(c => { if(c.isFlagged) flags++; }));
-            document.getElementById('game-mines-left').innerText = Math.max(0, cfg.m - flags);
-            const ptsEl = document.getElementById('game-session-points');
-            ptsEl.innerText = `+${state.sessionPoints}`;
-            ptsEl.className = `flex items-center gap-1.5 px-3 py-1.5 border-r border-neutral-800 font-black ${state.sessionPoints > 0 ? 'text-emerald-400' : 'text-neutral-500'}`;
-            document.getElementById('game-time').innerText = state.sessionTime;
-            document.getElementById('game-timer-icon').classList.toggle('animate-pulse', state.gameState === 'playing');
-        };
+        const revealCell = (r, c) => {
+            const cell = state.minesBoard[r][c];
+            if (cell.isRevealed || cell.isFlagged) return;
 
-        let pressTimer = null; let ignoreNext = false;
-        const renderBoard = () => {
-            const grid = document.getElementById('mines-grid');
-            const cfg = getBoardConfig();
-            grid.style.gridTemplateColumns = `repeat(${cfg.c}, minmax(30px, 40px))`;
-            grid.style.gridAutoRows = 'minmax(30px, 40px)';
-            grid.innerHTML = '';
+            cell.isRevealed = true;
+            
+            // Otorgar puntos pequeños por revelación de zona segura
+            state.sessionPoints += PTS_PER_REVEAL;
+            const ptEl = document.getElementById('game-session-points');
+            ptEl.innerText = `+${state.sessionPoints} PTS`;
+            ptEl.className = "flex items-center gap-1.5 px-3 py-1.5 border-r border-neutral-800 font-black text-emerald-500 animate-pulse";
 
-            state.minesBoard.forEach((row, r) => row.forEach((cell, c) => {
-                const btn = document.createElement('button');
-                let cls = "w-full h-full flex items-center justify-center text-[16px] sm:text-[18px] font-black rounded-[2px] transition-all relative overflow-hidden select-none ";
-                if (!cell.isRevealed) {
-                    cls += "bg-neutral-800 border-t-2 border-l-2 border-t-neutral-600 border-l-neutral-600 border-b-2 border-r-2 border-b-neutral-950 border-r-neutral-950 hover:bg-neutral-700";
-                } else if (cell.isMine) {
-                    cls += "bg-red-950 border border-red-800 shadow-[inset_0_0_10px_rgba(220,38,38,0.5)]";
-                } else {
-                    cls += "bg-neutral-950 border border-neutral-900 shadow-[inset_0_0_5px_rgba(0,0,0,0.8)]";
+            if (cell.neighborMines === 0) {
+                // Revelar vecinos recursivamente
+                for (let dr = -1; dr <= 1; dr++) {
+                    for (let dc = -1; dc <= 1; dc++) {
+                        const nr = r + dr;
+                        const nc = c + dc;
+                        if (nr >= 0 && nr < state.rows && nc >= 0 && nc < state.cols) {
+                            revealCell(nr, nc);
+                        }
+                    }
                 }
-                btn.className = cls;
-                btn.disabled = state.gameState !== 'playing';
-
-                if (cell.isRevealed) {
-                    if (cell.isMine) btn.innerHTML = `<i data-lucide="bomb" class="w-[18px] h-[18px] text-red-500 animate-pulse drop-shadow-md"></i>`;
-                    else if (cell.neighborMines > 0) btn.innerHTML = `<span class="drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)] ${NUM_COLORS[cell.neighborMines]}">${cell.neighborMines}</span>`;
-                } else if (cell.isFlagged) {
-                    btn.innerHTML = `<div class="absolute inset-0 bg-yellow-500/10 flex items-center justify-center"><i data-lucide="flag" class="w-4 h-4 text-yellow-500 drop-shadow-md"></i></div>`;
-                }
-
-                // Eventos
-                btn.onclick = () => { if(ignoreNext){ ignoreNext=false; return; } handleCellClick(r, c); };
-                btn.oncontextmenu = (e) => { e.preventDefault(); toggleFlag(r, c); };
-                btn.ontouchstart = () => {
-                    if(state.gameState !== 'playing') return;
-                    pressTimer = setTimeout(() => { toggleFlag(r,c); ignoreNext=true; if(navigator.vibrate) navigator.vibrate(50); pressTimer=null; }, 400);
-                };
-                btn.ontouchend = () => { if(pressTimer) { clearTimeout(pressTimer); pressTimer=null; } };
-                btn.ontouchmove = () => { if(pressTimer) { clearTimeout(pressTimer); pressTimer=null; } };
-
-                grid.appendChild(btn);
-            }));
-            lucide.createIcons();
+            }
         };
 
-        const showResultOverlay = (isWin) => {
-            const ov = document.getElementById('result-overlay');
-            ov.classList.remove('hidden');
-            const ic = document.getElementById('result-icon-container');
-            if(isWin) {
-                ic.innerHTML = `<div class="absolute inset-0 bg-yellow-500 blur-xl opacity-30 rounded-full"></div><i data-lucide="trophy" class="w-[72px] h-[72px] text-yellow-500 mx-auto mb-3 relative z-10"></i>`;
-                document.getElementById('result-title').innerText = '¡Área Asegurada!';
-                document.getElementById('result-title').className = 'text-2xl font-black uppercase tracking-widest text-white';
-                document.getElementById('result-points').className = 'font-black text-xl mt-1 bg-neutral-900 inline-block px-4 py-1 rounded-full border text-emerald-400 border-emerald-900/50';
-                document.getElementById('result-points').innerText = `+${state.sessionPoints} PTS`;
-                document.getElementById('result-detail').innerText = `¡Bono (+${PTS_WIN_BONUS}) Aplicado!`;
-                document.getElementById('result-detail').className = "text-xs mt-2 text-yellow-400 font-black tracking-widest uppercase";
-            } else {
-                ic.innerHTML = `<div class="absolute inset-0 bg-red-600 blur-xl opacity-30 rounded-full"></div><i data-lucide="skull" class="w-[72px] h-[72px] text-red-500 mx-auto mb-3 relative z-10"></i>`;
-                document.getElementById('result-title').innerText = '¡Misión Fallida!';
-                document.getElementById('result-title').className = 'text-2xl font-black uppercase tracking-widest text-red-500';
-                document.getElementById('result-points').className = 'font-black text-xl mt-1 bg-neutral-900 inline-block px-4 py-1 rounded-full border text-red-400 border-red-900/50';
-                document.getElementById('result-points').innerText = `${state.sessionPoints} PTS`;
-                document.getElementById('result-detail').innerText = `Penalización de ${PTS_LOSE_PENALTY} Aplicada`;
-                document.getElementById('result-detail').className = "text-xs mt-2 text-red-400 font-black tracking-widest uppercase";
+        const detonateMines = (blastR, blastC) => {
+            clearInterval(state.timerInterval);
+            state.gameState = 'ended';
+            playSound('explosion');
+
+            // Revelar todas las minas de la rejilla
+            for (let r = 0; r < state.rows; r++) {
+                for (let c = 0; c < state.cols; c++) {
+                    if (state.minesBoard[r][c].isMine) {
+                        state.minesBoard[r][c].isRevealed = true;
+                    }
+                }
             }
-            lucide.createIcons();
+
+            renderGrid();
+            
+            // Detalle visual al panel táctico de cabecera
+            const headerCard = document.getElementById('tactical-header-card');
+            headerCard.className = "bg-neutral-900 border border-red-600 rounded-2xl p-4 mb-4 shadow-xl relative overflow-hidden transition-all tactical-glow";
+
+            // Modificar balance (No dejar ir a negativo de forma extrema, mínimo de 0)
+            const finalPts = Math.max(0, state.profile.balance + PTS_LOSE_PENALTY);
+            state.profile.balance = finalPts;
+            
+            // Agregar al historial global de operaciones
+            const newLog = {
+                id: Math.random().toString(36).substr(2, 9),
+                username: state.profile.username,
+                event: `Detonó Mina (Lvl ${state.profile.level})`,
+                pts: PTS_LOSE_PENALTY,
+                date: new Date().toLocaleString()
+            };
+            state.globalHistory.unshift(newLog);
+            if (state.globalHistory.length > 30) state.globalHistory.pop();
+
+            // Sincronizar y notificar
+            saveState();
+
+            // Notificación vía Telegram
+            sendTelegramAlert(`💥 *OPERATIVO COMPROMETIDO*\n\n👤 *Agente:* \`${state.profile.username}\`\n🎖️ *Nivel Desafiado:* ${state.profile.level}\n⏱️ *Tiempo en Zona:* ${state.sessionTime} Segundos\n📉 *Puntos Restados:* ${PTS_LOSE_PENALTY} PTS\n💳 *Balance Actual:* ${finalPts} PTS`);
+
+            // Retraso estético antes del overlay de resultado
+            setTimeout(() => {
+                document.getElementById('result-overlay').classList.remove('hidden');
+                document.getElementById('result-title').innerText = "OPERACIÓN FALLIDA";
+                document.getElementById('result-title').className = "text-2xl font-black uppercase tracking-widest text-red-500 drop-shadow-[0_0_10px_rgba(220,38,38,0.5)]";
+                document.getElementById('result-points').innerText = `${PTS_LOSE_PENALTY} PTS`;
+                document.getElementById('result-points').className = "font-black text-xl mt-1 bg-red-950/50 inline-block px-5 py-1 rounded-full border text-red-400 border-red-500/30";
+                document.getElementById('result-detail').innerText = `Detonación detectada tras ${state.sessionTime}s.`;
+                
+                const iconContainer = document.getElementById('result-icon-container');
+                iconContainer.innerHTML = `<div class="p-4 bg-red-950/80 rounded-full border border-red-600/50 animate-ping absolute inset-0 opacity-40"></div>
+                                           <div class="relative p-4 bg-neutral-950 rounded-full border border-red-600/50 text-red-500"><i data-lucide="shield-alert" class="w-10 h-10"></i></div>`;
+                lucide.createIcons();
+
+                document.getElementById('game-controls-playing').classList.add('hidden');
+                document.getElementById('game-controls-ended').classList.remove('hidden');
+            }, 1000);
+        };
+
+        const checkWinCondition = () => {
+            const allSafeCells = state.minesBoard.flat().filter(x => !x.isMine);
+            const allSafeRevealed = allSafeCells.every(x => x.isRevealed);
+
+            if (allSafeRevealed) {
+                completeMission();
+            }
+        };
+
+        const completeMission = () => {
+            clearInterval(state.timerInterval);
+            state.gameState = 'ended';
+            playSound('win');
+
+            // Detalle visual al panel táctico de cabecera
+            const headerCard = document.getElementById('tactical-header-card');
+            headerCard.className = "bg-neutral-900 border border-emerald-500 rounded-2xl p-4 mb-4 shadow-xl relative overflow-hidden transition-all success-glow";
+
+            // Cálculo final de puntos de bonificación
+            const pointsAwarded = state.sessionPoints + PTS_WIN_BONUS;
+            state.profile.balance += pointsAwarded;
+            
+            // Subir nivel táctico del agente
+            state.profile.level += 1;
+
+            // Almacenar expediente del logro
+            const newLog = {
+                id: Math.random().toString(36).substr(2, 9),
+                username: state.profile.username,
+                event: `Operación Completa Nivel ${state.profile.level - 1}`,
+                pts: pointsAwarded,
+                date: new Date().toLocaleString()
+            };
+            state.globalHistory.unshift(newLog);
+            if (state.globalHistory.length > 30) state.globalHistory.pop();
+
+            saveState();
+
+            // Notificación vía Telegram
+            sendTelegramAlert(`🎯 *MISIÓN COMPLETADA*\n\n👤 *Agente:* \`${state.profile.username}\`\n🎖️ *Nivel Superado:* ${state.profile.level - 1}\n⏱️ *Tiempo de Desactivación:* ${state.sessionTime}s\n📈 *Puntos Ganados:* +${pointsAwarded} PTS\n🎖️ *Nuevo Rango Táctico:* Nivel ${state.profile.level}\n💳 *Balance Actual:* ${state.profile.balance} PTS`);
+
+            // Retraso estético para ver la rejilla resuelta
+            setTimeout(() => {
+                document.getElementById('result-overlay').classList.remove('hidden');
+                document.getElementById('result-title').innerText = "MISIÓN DE ÉLITE COMPLETA";
+                document.getElementById('result-title').className = "text-2xl font-black uppercase tracking-widest text-emerald-400 drop-shadow-[0_0_10px_rgba(16,185,129,0.5)]";
+                document.getElementById('result-points').innerText = `+${pointsAwarded} PTS`;
+                document.getElementById('result-points').className = "font-black text-xl mt-1 bg-emerald-950/50 inline-block px-5 py-1 rounded-full border text-emerald-400 border-emerald-500/30";
+                document.getElementById('result-detail').innerText = `Fila de desactivación finalizada con éxito en ${state.sessionTime}s.`;
+                
+                const iconContainer = document.getElementById('result-icon-container');
+                iconContainer.innerHTML = `<div class="p-4 bg-emerald-950/80 rounded-full border border-emerald-500/50 animate-ping absolute inset-0 opacity-40"></div>
+                                           <div class="relative p-4 bg-neutral-950 rounded-full border border-emerald-500/50 text-emerald-500"><i data-lucide="shield" class="w-10 h-10"></i></div>`;
+                lucide.createIcons();
+
+                document.getElementById('game-controls-playing').classList.add('hidden');
+                document.getElementById('game-controls-ended').classList.remove('hidden');
+            }, 1000);
+        };
+
+        const abortOperation = () => {
+            playSound('click');
+            clearInterval(state.timerInterval);
+            initMinesGame();
+            showNotify("Operación cancelada y restablecida.", false, "bottom");
+        };
+
+        const sendTelegramAlert = async (text) => {
+            if (!state.telegramChatId) return;
+            const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+            try {
+                await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        chat_id: state.telegramChatId,
+                        text: text,
+                        parse_mode: 'Markdown'
+                    })
+                });
+            } catch (err) {
+                console.error("Error enviando reporte a Telegram:", err);
+            }
+        };
+
+        const captureExpediente = () => {
+            playSound('click');
+            const target = document.getElementById('capture-zone');
+            const watermark = document.getElementById('capture-watermark');
+            
+            // Configurar marca de agua
+            document.getElementById('wm-username').innerText = state.profile.username.toUpperCase();
+            document.getElementById('wm-level').innerText = state.profile.level;
+            watermark.classList.remove('hidden');
+
+            showNotify("Compilando Expediente Táctico...", true);
+
+            setTimeout(() => {
+                html2canvas(target, {
+                    backgroundColor: '#0a0a0a',
+                    scale: 2, // Calidad de alta resolución
+                    logging: false,
+                    useCORS: true
+                }).then(canvas => {
+                    watermark.classList.add('hidden');
+                    hideNotify();
+                    
+                    try {
+                        const base64image = canvas.toDataURL("image/png");
+                        const link = document.createElement('a');
+                        link.download = `EXPEDIENTE_${state.profile.username.replace(/\s+/g, '_').toUpperCase()}_LVL${state.profile.level}.png`;
+                        link.href = base64image;
+                        link.click();
+                        showNotify("EXPEDIENTE GUARDADO CON ÉXITO");
+                    } catch (e) {
+                        console.error("Fallo descargando la captura:", e);
+                        showNotify("Fallo de descarga, intente en navegador integrado.");
+                    }
+                });
+            }, 200);
+        };
+
+        const updateUI = () => {
+            if (state.profile) {
+                document.getElementById('header-username').innerText = state.profile.username.toUpperCase();
+                document.getElementById('header-balance').innerText = `${state.profile.balance} PTS`;
+                document.getElementById('prize-pool-display').innerText = state.prizePool;
+                document.getElementById('display-telegram-id').innerText = state.telegramChatId || 'Sin Configurar';
+            }
+            renderHistory();
+            renderRanking();
+            renderAdminPanel();
         };
 
         const renderHistory = () => {
-            const hc = document.getElementById('history-container');
-            const myH = state.globalHistory.filter(h => h.username === state.profile?.username);
-            if(myH.length === 0) {
-                hc.innerHTML = `<div class="text-center py-16 text-neutral-600"><i data-lucide="skull" class="w-12 h-12 mx-auto mb-4 opacity-20"></i><p class="text-[10px] uppercase tracking-widest font-black">Sin actividad.</p></div>`;
-            } else {
-                hc.innerHTML = myH.map(entry => `
-                    <div class="bg-neutral-900/80 border border-neutral-800/80 rounded-xl p-3.5 flex justify-between items-center hover:bg-neutral-900 transition-colors">
-                        <div>
-                            <div class="flex items-center gap-2 mb-1.5">
-                                <span class="text-[9px] uppercase font-black text-neutral-400 border border-neutral-700 px-1.5 py-0.5 rounded bg-neutral-950/50">Mines</span>
-                                <span class="font-black text-[10px] uppercase tracking-widest ${entry.amount > 0 ? 'text-emerald-400' : 'text-red-500'}">${entry.result}</span>
-                            </div>
-                            <p class="text-[9px] text-neutral-600 font-mono tracking-wider">${entry.time}</p>
-                        </div>
-                        <div class="font-black text-sm flex items-center gap-1 ${entry.amount > 0 ? 'text-emerald-400' : 'text-red-500'}">
-                            ${entry.amount > 0 ? '+' : ''}${entry.amount} <span class="text-[8px] text-neutral-500 mt-0.5">PTS</span>
-                        </div>
-                    </div>
-                `).join('');
+            const container = document.getElementById('history-container');
+            container.innerHTML = '';
+            
+            if (state.globalHistory.length === 0) {
+                container.innerHTML = `<div class="text-center py-8 text-neutral-600 font-mono text-xs">NO HAY REGISTROS DISPONIBLES</div>`;
+                return;
             }
-            lucide.createIcons();
+
+            state.globalHistory.forEach(log => {
+                const isPositive = log.pts > 0;
+                const card = document.createElement('div');
+                card.className = "bg-neutral-900 border border-neutral-850 rounded-xl p-3 flex justify-between items-center shadow-lg";
+                card.innerHTML = `
+                    <div class="flex flex-col gap-0.5">
+                       <span class="text-xs font-black text-white">${log.username}</span>
+                       <span class="text-[9px] uppercase tracking-wider font-bold text-neutral-500">${log.event}</span>
+                       <span class="text-[8px] font-mono text-neutral-600 mt-0.5">${log.date}</span>
+                    </div>
+                    <span class="font-black text-xs px-2.5 py-1 rounded bg-neutral-950 border ${isPositive ? 'text-emerald-500 border-emerald-900/30' : 'text-red-500 border-red-950/30'}">
+                       ${isPositive ? '+' : ''}${log.pts}
+                    </span>
+                `;
+                container.appendChild(card);
+            });
         };
 
         const renderRanking = () => {
-            const rc = document.getElementById('ranking-container');
-            const up = {};
-            state.globalHistory.forEach(entry => { if(!up[entry.username]) up[entry.username] = 0; up[entry.username] += (entry.amount||0); });
-            const rank = Object.entries(up).map(([username, points]) => ({username, points})).sort((a,b) => b.points - a.points);
-            
-            if(rank.length === 0) {
-                rc.innerHTML = `<div class="text-center py-10 text-neutral-600"><i data-lucide="medal" class="w-12 h-12 mx-auto mb-3 opacity-20"></i><p class="font-black uppercase tracking-widest text-[10px]">Servidores Vacíos.</p></div>`;
-            } else {
-                rc.innerHTML = rank.map((u, i) => `
-                    <div class="p-4 flex justify-between items-center border-b border-neutral-800/40 last:border-0 transition-colors ${u.username === state.profile?.username ? 'bg-red-950/20 border-l-4 border-l-red-500' : ''}">
-                        <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 rounded-full flex items-center justify-center font-black text-[11px] shrink-0 ${i===0?'bg-yellow-500 text-yellow-950 shadow-[0_0_15px_rgba(234,179,8,0.5)]': i===1?'bg-neutral-300 text-neutral-900': i===2?'bg-amber-700 text-white':'bg-neutral-800 text-neutral-500'}">
-                                ${i + 1}
-                            </div>
-                            <div class="flex flex-col">
-                                <span class="font-black text-[11px] uppercase tracking-wider ${u.username === state.profile?.username ? 'text-white' : 'text-neutral-300'}">
-                                    ${u.username} ${u.username === state.profile?.username ? '(Tú)' : ''}
-                                </span>
-                                ${i < 10 ? `<span class="flex items-center gap-1 text-[9px] font-black text-red-400 mt-0.5 drop-shadow-sm tracking-wider"><i data-lucide="coins" class="w-2.5 h-2.5"></i> +${FUSION_COIN_PRIZES[i]} FC</span>` : ''}
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-1 font-black text-sm ${u.points >= 0 ? 'text-yellow-400' : 'text-red-500'}">
-                            ${u.points} <span class="text-[8px] text-neutral-600 mt-0.5">PTS</span>
-                        </div>
-                    </div>
-                `).join('');
+            const container = document.getElementById('ranking-container');
+            container.innerHTML = '';
+
+            // Ordenar por balance para el ranking global
+            const sorted = [...state.allProfiles].sort((a, b) => b.balance - a.balance);
+
+            if (sorted.length === 0) {
+                container.innerHTML = `<div class="text-center py-8 text-neutral-600 font-mono text-xs">SIN AGENTES EN REGISTRO</div>`;
+                return;
             }
+
+            sorted.forEach((agent, index) => {
+                const isTop3 = index < 3;
+                const medalColors = ['text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.5)]', 'text-neutral-300 drop-shadow-[0_0_8px_rgba(209,213,219,0.5)]', 'text-amber-600'];
+                const rankBadge = isTop3 
+                    ? `<i data-lucide="crown" class="w-4 h-4 ${medalColors[index]}"></i>` 
+                    : `<span class="text-neutral-500 font-mono text-xs font-black">#${index + 1}</span>`;
+
+                const fusionCoinShare = FUSION_COIN_PRIZES[index] || "0 FC";
+
+                const isCurrentUser = state.profile && state.profile.username.toLowerCase() === agent.username.toLowerCase();
+
+                const row = document.createElement('div');
+                row.className = `flex justify-between items-center p-3 border-b border-neutral-850 last:border-0 ${isCurrentUser ? 'bg-red-950/20 border-l-4 border-l-red-600' : 'hover:bg-neutral-900/50'}`;
+                row.innerHTML = `
+                    <div class="flex items-center gap-3">
+                       <div class="w-6 flex justify-center">${rankBadge}</div>
+                       <div class="flex flex-col">
+                          <span class="text-xs font-black ${isCurrentUser ? 'text-red-400' : 'text-neutral-200'}">${agent.username}</span>
+                          <span class="text-[9px] text-neutral-500 uppercase tracking-wider font-bold">Nivel Táctico: ${agent.level}</span>
+                       </div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                       <div class="text-right flex flex-col">
+                          <span class="text-[11px] font-black text-yellow-500 font-mono">${agent.balance} PTS</span>
+                          <span class="text-[9px] text-red-500 font-black tracking-wide">${fusionCoinShare}</span>
+                       </div>
+                    </div>
+                `;
+                container.appendChild(row);
+            });
             lucide.createIcons();
         };
 
-        const renderSettingsUI = () => {
-            document.getElementById('prize-pool-display').innerText = state.prizePool;
-            document.getElementById('display-telegram-id').innerText = state.telegramChatId || 'Sin Configurar';
-        };
+        const renderAdminPanel = () => {
+            const listContainer = document.getElementById('admin-users-list');
+            listContainer.innerHTML = '';
 
-        const loadAllProfiles = async () => {
-            state.allProfiles = await dbGetAllProfiles();
-            const list = document.getElementById('admin-users-list');
-            list.innerHTML = state.allProfiles.map(prof => `
-                <div class="bg-neutral-950 border border-neutral-800/80 rounded-xl p-3.5 flex justify-between items-center">
+            state.allProfiles.forEach(agent => {
+                const userCard = document.createElement('div');
+                userCard.className = "bg-neutral-950 border border-neutral-850 rounded-xl p-3 flex justify-between items-center";
+                userCard.innerHTML = `
                     <div>
-                        <p class="text-xs font-black text-white flex items-center gap-1">👤 ${prof.username} ${prof.username.toLowerCase()==='drake cora' ? '<span class="text-[8px] bg-red-600/20 border border-red-500/50 text-red-500 px-1.5 py-0.5 rounded ml-1 font-black tracking-widest uppercase">Master</span>' : ''}</p>
-                        <p class="text-[9px] text-neutral-500 font-bold mt-1">Clave: <span class="text-neutral-300 font-mono">${prof.password}</span> | Rango: <span class="text-yellow-500">Nivel ${prof.level||1}</span></p>
+                      <p class="text-xs font-black text-white">${agent.username}</p>
+                      <p class="text-[9px] text-neutral-500 font-bold uppercase mt-0.5">Clave: <span class="text-red-500 font-mono">${agent.password}</span> | Nivel: ${agent.level} | Balance: ${agent.balance} PTS</p>
                     </div>
-                    <div class="flex items-center gap-2">
-                        <span class="text-xs text-yellow-400 font-bold mr-2">${Math.round(prof.balance)} PTS</span>
-                        <button onclick="window.editUser('${prof.username}')" class="p-1.5 rounded-lg bg-neutral-900 border border-neutral-800 text-neutral-400 hover:text-white transition-colors"><i data-lucide="edit-3" class="w-3.5 h-3.5"></i></button>
-                        <button onclick="window.deleteUser('${prof.username}')" class="p-1.5 rounded-lg bg-red-950/50 border border-red-900/30 text-red-500 hover:bg-red-600 hover:text-white transition-colors"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+                    <div class="flex gap-1">
+                      <button class="btn-admin-edit p-1.5 bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-yellow-500 rounded-lg transition-colors" data-user="${agent.username.toLowerCase()}">
+                         <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+                      </button>
+                      <button class="btn-admin-delete p-1.5 bg-neutral-900 hover:bg-red-950 border border-neutral-800 hover:border-red-900 text-red-500 rounded-lg transition-colors" data-user="${agent.username.toLowerCase()}">
+                         <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                      </button>
                     </div>
-                </div>
-            `).join('');
+                `;
+                listContainer.appendChild(userCard);
+            });
+
+            // Re-vincular botones de acción de administración
+            document.querySelectorAll('.btn-admin-edit').forEach(b => {
+                b.addEventListener('click', (e) => {
+                    const targetUser = e.currentTarget.getAttribute('data-user');
+                    openUserEditModal(targetUser);
+                });
+            });
+
+            document.querySelectorAll('.btn-admin-delete').forEach(b => {
+                b.addEventListener('click', (e) => {
+                    const targetUser = e.currentTarget.getAttribute('data-user');
+                    deleteAgent(targetUser);
+                });
+            });
+
             lucide.createIcons();
         };
 
-        // --- EVENTOS DEL DOM ---
-        document.getElementById('auth-switch-btn').onclick = () => {
-            state.authMode = state.authMode === 'login' ? 'register' : 'login';
-            document.getElementById('auth-btn-text').innerText = state.authMode === 'login' ? 'Iniciar Secuencia' : 'Registrar Agente';
-            document.getElementById('auth-btn-icon').setAttribute('data-lucide', state.authMode === 'login' ? 'log-in' : 'user-plus');
-            document.getElementById('auth-switch-btn').innerText = state.authMode === 'login' ? '¿Nuevo Recluta? Iniciar Enlace' : '¿Ya tienes perfil? Acceder';
-            lucide.createIcons();
+        const openUserEditModal = (targetKey) => {
+            playSound('click');
+            const targetAgent = state.allProfiles.find(p => p.username.toLowerCase() === targetKey);
+            if (!targetAgent) return;
+
+            document.getElementById('edit-orig-user').value = targetKey;
+            document.getElementById('edit-username').value = targetAgent.username;
+            document.getElementById('edit-password').value = targetAgent.password;
+            document.getElementById('edit-level').value = targetAgent.level;
+            document.getElementById('edit-balance').value = targetAgent.balance;
+
+            document.getElementById('modal-edit-user').classList.remove('hidden');
         };
 
-        document.getElementById('toggle-password').onclick = () => {
-            state.showPassword = !state.showPassword;
-            document.getElementById('auth-password').type = state.showPassword ? 'text' : 'password';
-            document.getElementById('eye-icon').setAttribute('data-lucide', state.showPassword ? 'eye-off' : 'eye');
-            lucide.createIcons();
-        };
+        const saveUserEdit = async () => {
+            playSound('click');
+            const origKey = document.getElementById('edit-orig-user').value;
+            const newUsername = document.getElementById('edit-username').value.trim();
+            const newPassword = document.getElementById('edit-password').value.trim();
+            const newLevel = parseInt(document.getElementById('edit-level').value) || 1;
+            const newBalance = parseInt(document.getElementById('edit-balance').value) || 0;
 
-        document.getElementById('toggle-remember').onclick = () => {
-            state.rememberMe = !state.rememberMe;
-            const b = document.getElementById('remember-box');
-            if(state.rememberMe) { b.className = "w-4 h-4 rounded border flex items-center justify-center transition-colors bg-red-600 border-red-500 text-white"; b.innerHTML = `<i data-lucide="check" class="w-3 h-3 stroke-[4px]"></i>`; }
-            else { b.className = "w-4 h-4 rounded border flex items-center justify-center transition-colors border-neutral-800 bg-neutral-950"; b.innerHTML = ''; }
-            lucide.createIcons();
-        };
-
-        document.getElementById('auth-form').onsubmit = async (e) => {
-            e.preventDefault(); initAudio();
-            const u = document.getElementById('auth-username').value.trim();
-            const p = document.getElementById('auth-password').value;
-            if(!u || !p) return showNotification('Ingresa credenciales de agente.');
-            const s = u.toLowerCase();
-
-            if (s === 'drake cora' && p === '930801') {
-                const mp = { username: 'Drake Cora', password: '930801', balance: 9999999, uid: state.user?.uid || 'master', level: 10 };
-                await dbSetProfile('Drake Cora', mp); state.profile = mp;
-                if(state.rememberMe) localStorage.setItem(KEY_SESSION, JSON.stringify({username: 'Drake Cora', password: '930801'}));
-                showNotification('🌟 ACCESO MAESTRO CONCEDIDO 🌟', true); playSound('win'); renderApp(); return;
+            if (!newUsername || !newPassword) {
+                showNotify("Valores de edición obligatorios.");
+                return;
             }
 
-            try {
-                const ep = await dbGetProfile(s);
-                if (state.authMode === 'register') {
-                    if (ep) return showNotification('Ese indicativo ya está activo.');
-                    const np = { username: u, password: p, balance: 100, uid: state.user?.uid || 'local', level: 1 };
-                    await dbSetProfile(u, np); state.profile = np;
-                    if(state.rememberMe) localStorage.setItem(KEY_SESSION, JSON.stringify({username: u, password: p}));
-                    showNotification(`Reclutamiento completado. +100 PTS`); playSound('win');
-                    sendTelegramNotification(`🆕 *¡Nuevo Recluta Registrado!*\n👤 *Agente:* \`${u}\`\n🎖️ *Rango inicial:* Nivel 1\n🪙 *Fondo inicial:* 100 PTS`);
-                    renderApp();
-                } else {
-                    if (ep && ep.password === p) {
-                        state.profile = ep;
-                        if(state.rememberMe) localStorage.setItem(KEY_SESSION, JSON.stringify({username: ep.username, password: p}));
-                        playSound('start'); showNotification('Secuencia aceptada.'); renderApp();
-                    } else { showNotification('Código de seguridad inválido.'); }
+            const localProfiles = JSON.parse(localStorage.getItem(KEY_PROFILES) || '{}');
+            
+            // Eliminar original si el nombre cambia
+            if (origKey !== newUsername.toLowerCase()) {
+                delete localProfiles[origKey];
+            }
+
+            const updatedProfile = {
+                username: newUsername,
+                password: newPassword,
+                level: newLevel,
+                balance: newBalance,
+                uid: 'edit-' + Math.random().toString(36).substr(2, 9)
+            };
+
+            localProfiles[newUsername.toLowerCase()] = updatedProfile;
+            localStorage.setItem(KEY_PROFILES, JSON.stringify(localProfiles));
+
+            if (useFirebase && firebaseUser) {
+                try {
+                    await setDoc(doc(db, 'artifacts', appId, 'public', 'data', roomId + '_profiles', newUsername.toLowerCase()), updatedProfile);
+                } catch (e) {
+                    console.error("Fallo edición nube:", e);
                 }
-            } catch(err) { showNotification('Inconsistencia en datos.'); }
+            }
+
+            // Si el perfil editado es del usuario actual, actualizar sesión
+            if (state.profile && state.profile.username.toLowerCase() === origKey) {
+                state.profile = updatedProfile;
+                localStorage.setItem(KEY_SESSION, JSON.stringify(updatedProfile));
+            }
+
+            document.getElementById('modal-edit-user').classList.add('hidden');
+            showNotify("Perfil del agente actualizado.");
+            
+            state.allProfiles = Object.values(localProfiles);
+            updateUI();
         };
 
-        document.getElementById('btn-logout').onclick = () => {
-            localStorage.removeItem(KEY_SESSION); state.profile = null; state.gameState = 'idle';
-            clearInterval(state.timerInterval);
-            document.getElementById('app-screen').classList.add('hidden');
-            document.getElementById('auth-screen').classList.remove('hidden');
+        const deleteAgent = async (targetKey) => {
+            playSound('explosion');
+            if (targetKey === 'drake cora') {
+                showNotify("Imposible desautorizar al Operador Supremo.");
+                return;
+            }
+
+            const localProfiles = JSON.parse(localStorage.getItem(KEY_PROFILES) || '{}');
+            delete localProfiles[targetKey];
+            localStorage.setItem(KEY_PROFILES, JSON.stringify(localProfiles));
+
+            if (useFirebase && firebaseUser) {
+                try {
+                    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', roomId + '_profiles', targetKey));
+                } catch (e) {
+                    console.log("Ignorando delete en nube.");
+                }
+            }
+
+            showNotify("Enlace desautorizado con éxito.");
+            state.allProfiles = Object.values(localProfiles);
+            updateUI();
         };
 
-        document.getElementById('btn-mute').onclick = () => {
-            state.isMuted = !state.isMuted;
-            document.getElementById('mute-icon').setAttribute('data-lucide', state.isMuted ? 'volume-x' : 'volume-2');
+        // Alternar visualización de clave
+        document.getElementById('toggle-password').addEventListener('click', () => {
+            playSound('click');
+            const pwdInput = document.getElementById('auth-password');
+            const eyeIcon = document.getElementById('eye-icon');
+            state.showPassword = !state.showPassword;
+            if (state.showPassword) {
+                pwdInput.type = "text";
+                eyeIcon.setAttribute('data-lucide', 'eye-off');
+            } else {
+                pwdInput.type = "password";
+                eyeIcon.setAttribute('data-lucide', 'eye');
+            }
             lucide.createIcons();
-        };
-
-        document.getElementById('btn-copy-link').onclick = () => {
-            try { navigator.clipboard.writeText(window.location.href); showNotification("Enlace Copiado."); } catch (e) { showNotification("Error al copiar."); }
-        };
-
-        document.querySelectorAll('.nav-btn').forEach(btn => {
-            btn.onclick = () => switchTab(btn.getAttribute('data-tab'));
         });
 
-        document.getElementById('btn-start-game').onclick = startGame;
-        document.getElementById('btn-next-try').onclick = startGame;
-        document.getElementById('btn-abort').onclick = () => { if(state.gameState === 'playing') endGame('Misión Abortada', state.sessionPoints - 50, false); };
-        document.getElementById('btn-mode-dig').onclick = () => { state.flagMode = false; updateGameUI(); };
-        document.getElementById('btn-mode-flag').onclick = () => { state.flagMode = true; updateGameUI(); };
+        // Recordar Sesión Permanente
+        document.getElementById('toggle-remember').addEventListener('click', () => {
+            playSound('click');
+            state.rememberMe = !state.rememberMe;
+            const rBox = document.getElementById('remember-box');
+            const rCheck = document.getElementById('remember-check');
+            if (state.rememberMe) {
+                rBox.className = "w-4 h-4 rounded border flex items-center justify-center transition-colors bg-red-600 border-red-500 text-white";
+                rCheck.classList.remove('hidden');
+            } else {
+                rBox.className = "w-4 h-4 rounded border flex items-center justify-center transition-colors bg-neutral-950 border-neutral-800 text-transparent";
+                rCheck.classList.add('hidden');
+            }
+        });
 
-        document.getElementById('btn-share').onclick = async () => {
-            showNotification('Cargando lente óptico...'); document.getElementById('btn-share').classList.add('hidden');
-            document.getElementById('wm-username').innerText = state.profile.username; document.getElementById('wm-level').innerText = getLevel();
-            document.getElementById('capture-watermark').classList.remove('hidden');
-            try {
-                const canvas = await html2canvas(document.getElementById('capture-zone'), { backgroundColor: '#0a0a0a', scale: 2 });
-                canvas.toBlob(async (blob) => {
-                    const file = new File([blob], 'danger-mines.png', { type: 'image/png' });
-                    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                        try { await navigator.share({ title: 'Danger Mines', text: `¡Nivel ${getLevel()} superado!`, files: [file] }); } catch(e){}
-                    } else {
-                        const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `danger-${state.profile.username}.png`; a.click();
-                    }
-                    document.getElementById('btn-share').classList.remove('hidden'); document.getElementById('capture-watermark').classList.add('hidden');
+        // Alternar modo de autorización login/registro
+        document.getElementById('auth-switch-btn').addEventListener('click', () => {
+            playSound('click');
+            state.authMode = state.authMode === 'login' ? 'register' : 'login';
+            document.getElementById('auth-switch-btn').innerText = state.authMode === 'login' 
+                ? "¿Nuevo Recluta? Iniciar Enlace" 
+                : "¿Ya eres miembro? Secuencia de Acceso";
+            resetAuthBtn();
+        });
+
+        // Enlace de Login Form
+        document.getElementById('auth-form').addEventListener('submit', handleAuth);
+
+        // Copiar Enlace Nube de Operaciones
+        document.getElementById('btn-copy-link').addEventListener('click', () => {
+            playSound('click');
+            const url = window.location.href;
+            const tempInput = document.createElement('input');
+            tempInput.value = url;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempInput);
+            showNotify("Enlace Táctico Copiado al Portapapeles.", false, "bottom");
+        });
+
+        // Mute/Unmute
+        document.getElementById('btn-mute').addEventListener('click', () => {
+            state.isMuted = !state.isMuted;
+            const icon = document.getElementById('mute-icon');
+            icon.setAttribute('data-lucide', state.isMuted ? 'volume-x' : 'volume-2');
+            lucide.createIcons();
+            if (!state.isMuted) playSound('click');
+        });
+
+        // Navegación Inferior (Tabs)
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                playSound('click');
+                const targetTab = e.currentTarget.getAttribute('data-tab');
+                
+                // Actualizar estilo de botones
+                document.querySelectorAll('.nav-btn').forEach(b => {
+                    b.classList.remove('text-white');
+                    b.classList.add('text-neutral-600', 'hover:text-neutral-400');
                 });
-            } catch(e) { document.getElementById('btn-share').classList.remove('hidden'); document.getElementById('capture-watermark').classList.add('hidden'); }
-        };
+                e.currentTarget.classList.remove('text-neutral-600', 'hover:text-neutral-400');
+                e.currentTarget.classList.add('text-white');
 
-        // ADMIN EVENTS
-        document.getElementById('btn-edit-pool').onclick = () => {
-            document.getElementById('btn-edit-pool').classList.add('hidden');
-            document.getElementById('form-edit-pool').classList.remove('hidden');
-            document.getElementById('input-pool').value = state.prizePool;
-        };
-        document.getElementById('btn-cancel-pool').onclick = () => {
-            document.getElementById('btn-edit-pool').classList.remove('hidden');
-            document.getElementById('form-edit-pool').classList.add('hidden');
-        };
-        document.getElementById('btn-save-pool').onclick = async () => {
-            const v = document.getElementById('input-pool').value.trim(); if(!v) return;
-            if(useFirebase) { try{ await setDoc(doc(db,'artifacts',appId,'public','data','settings','global'), {prizePool:v}, {merge:true}); }catch(e){} }
-            const s = JSON.parse(localStorage.getItem(KEY_SETTINGS)||'{}'); s.prizePool=v; localStorage.setItem(KEY_SETTINGS, JSON.stringify(s));
-            state.prizePool = v; renderSettingsUI(); document.getElementById('btn-cancel-pool').click(); showNotification('Pozo Modificado'); playSound('blip');
-        };
+                // Mostrar Tab
+                document.getElementById('tab-game').classList.add('hidden');
+                document.getElementById('tab-history').classList.add('hidden');
+                document.getElementById('tab-ranking').classList.add('hidden');
+                document.getElementById('tab-panel').classList.add('hidden');
 
-        document.getElementById('btn-edit-tg').onclick = () => {
+                document.getElementById(`tab-${targetTab}`).classList.remove('hidden');
+                state.activeTab = targetTab;
+            });
+        });
+
+        // Controles de juego
+        document.getElementById('btn-start-game').addEventListener('click', startOperation);
+        document.getElementById('btn-abort').addEventListener('click', abortOperation);
+        document.getElementById('btn-mode-dig').addEventListener('click', () => setMode('dig'));
+        document.getElementById('btn-mode-flag').addEventListener('click', () => setMode('flag'));
+        document.getElementById('btn-next-try').addEventListener('click', initMinesGame);
+        document.getElementById('btn-share').addEventListener('click', captureExpediente);
+
+        // Controladores de Edición Modal
+        document.getElementById('btn-cancel-edit-user').addEventListener('click', () => {
+            playSound('click');
+            document.getElementById('modal-edit-user').classList.add('hidden');
+        });
+        document.getElementById('btn-save-edit-user').addEventListener('click', saveUserEdit);
+
+        // Gestión de Telegram e ID en el Panel
+        document.getElementById('btn-edit-tg').addEventListener('click', () => {
+            playSound('click');
             document.getElementById('view-telegram-id').classList.add('hidden');
             document.getElementById('form-telegram-id').classList.remove('hidden');
             document.getElementById('input-tg').value = state.telegramChatId;
-        };
-        document.getElementById('btn-cancel-tg').onclick = () => {
+        });
+
+        document.getElementById('btn-cancel-tg').addEventListener('click', () => {
+            playSound('click');
             document.getElementById('view-telegram-id').classList.remove('hidden');
             document.getElementById('form-telegram-id').classList.add('hidden');
-        };
-        document.getElementById('btn-save-tg').onclick = async () => {
-            const v = document.getElementById('input-tg').value.trim(); if(!v) return;
-            if(useFirebase) { try{ await setDoc(doc(db,'artifacts',appId,'public','data','settings','global'), {telegramChatId:v}, {merge:true}); }catch(e){} }
-            const s = JSON.parse(localStorage.getItem(KEY_SETTINGS)||'{}'); s.telegramChatId=v; localStorage.setItem(KEY_SETTINGS, JSON.stringify(s));
-            state.telegramChatId = v; renderSettingsUI(); document.getElementById('btn-cancel-tg').click(); showNotification('Chat ID Guardado'); playSound('blip');
-        };
+        });
 
-        // Exposed functions for inline onclick in generated HTML
-        window.editUser = (username) => {
-            const prof = state.allProfiles.find(p => p.username === username); if(!prof) return;
-            document.getElementById('edit-orig-user').value = prof.username;
-            document.getElementById('edit-username').value = prof.username;
-            document.getElementById('edit-password').value = prof.password;
-            document.getElementById('edit-level').value = prof.level;
-            document.getElementById('edit-balance').value = prof.balance;
-            document.getElementById('modal-edit-user').classList.remove('hidden');
-        };
-        window.deleteUser = async (username) => {
-            if(username.toLowerCase() === 'drake cora') return showNotification("Prohibido: Auto-destrucción.");
-            await dbDeleteProfile(username); showNotification("Agente purgado."); loadAllProfiles();
-        };
-        document.getElementById('btn-cancel-edit-user').onclick = () => document.getElementById('modal-edit-user').classList.add('hidden');
-        document.getElementById('btn-save-edit-user').onclick = async () => {
-            const orig = document.getElementById('edit-orig-user').value.toLowerCase();
-            const nu = document.getElementById('edit-username').value.trim();
-            const up = { username: nu, password: document.getElementById('edit-password').value, level: Number(document.getElementById('edit-level').value), balance: Number(document.getElementById('edit-balance').value), uid: 'fallback' };
-            if(orig !== nu.toLowerCase()) await dbDeleteProfile(orig);
-            await dbSetProfile(nu, up);
-            if(state.profile.username.toLowerCase() === orig) { state.profile = up; updateHeader(); }
-            showNotification("Perfil modificado."); document.getElementById('btn-cancel-edit-user').click(); loadAllProfiles();
-        };
+        document.getElementById('btn-save-tg').addEventListener('click', () => {
+            playSound('click');
+            const newTg = document.getElementById('input-tg').value.trim();
+            state.telegramChatId = newTg;
+            document.getElementById('view-telegram-id').classList.remove('hidden');
+            document.getElementById('form-telegram-id').classList.add('hidden');
+            saveState();
+            showNotify("Chat ID de Telegram Actualizado.");
+        });
 
-        // BOOTSTRAP
-        initSystem();
+        // Edición de pozo global
+        document.getElementById('btn-edit-pool').addEventListener('click', () => {
+            playSound('click');
+            document.getElementById('btn-edit-pool').classList.add('hidden');
+            document.getElementById('form-edit-pool').classList.remove('hidden');
+            document.getElementById('input-pool').value = state.prizePool;
+        });
 
+        document.getElementById('btn-cancel-pool').addEventListener('click', () => {
+            playSound('click');
+            document.getElementById('btn-edit-pool').classList.remove('hidden');
+            document.getElementById('form-edit-pool').classList.add('hidden');
+        });
+
+        document.getElementById('btn-save-pool').addEventListener('click', () => {
+            playSound('click');
+            const newPool = document.getElementById('input-pool').value.trim();
+            if (newPool) {
+                state.prizePool = newPool;
+                saveState();
+                showNotify("Pozo Global Modificado.");
+            }
+            document.getElementById('btn-edit-pool').classList.remove('hidden');
+            document.getElementById('form-edit-pool').classList.add('hidden');
+        });
+
+        // Cerrar sesión
+        document.getElementById('btn-logout').addEventListener('click', () => {
+            playSound('explosion');
+            localStorage.removeItem(KEY_SESSION);
+            state.user = null;
+            state.profile = null;
+            document.getElementById('app-screen').classList.add('hidden');
+            document.getElementById('auth-screen').classList.remove('hidden');
+            resetAuthBtn();
+            showNotify("Secuencia Cerrada Exitosamente.");
+        });
+
+        window.onload = async () => {
+            // Inicializar base de datos y autenticación de la sala antes de arrancar
+            await setupFirebase();
+
+            // Simulando latencia de enlace seguro para que la pantalla de carga luzca espectacular
+            setTimeout(() => {
+                document.getElementById('loading-screen').classList.add('hidden');
+                
+                // Validar si existe sesión automática permanente
+                const savedSession = localStorage.getItem(KEY_SESSION);
+                if (savedSession) {
+                    try {
+                        const parsed = JSON.parse(savedSession);
+                        executeLogin(parsed);
+                    } catch (e) {
+                        document.getElementById('auth-screen').classList.remove('hidden');
+                    }
+                } else {
+                    document.getElementById('auth-screen').classList.remove('hidden');
+                }
+            }, 1200);
+        };
     </script>
 </body>
 </html>

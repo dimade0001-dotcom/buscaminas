@@ -376,13 +376,26 @@
         lucide.createIcons();
         
         // --- SISTEMA DE SALAS (ROOMS) MULTIJUGADOR ---
-        const urlParams = new URLSearchParams(window.location.search);
-        let roomId = urlParams.get('room');
-        if (!roomId) {
-            roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
-            const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + '?room=' + roomId;
-            window.history.replaceState({path: newUrl}, '', newUrl);
+        let roomId = 'GLOBAL';
+        try {
+            const urlParams = new URLSearchParams(window.location.search);
+            roomId = urlParams.get('room');
+            if (!roomId) {
+                roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
+                // Omitir replaceState si nos encontramos en un protocolo restrictivo como blob:
+                if (window.location.protocol !== 'blob:') {
+                    const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + '?room=' + roomId;
+                    window.history.replaceState({path: newUrl}, '', newUrl);
+                }
+            }
+        } catch (e) {
+            console.warn("La API de historial de navegación está restringida o no disponible en este entorno de pruebas:", e);
+            // Fallback de asignación segura de Room ID
+            if (!roomId) {
+                roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
+            }
         }
+        
         document.getElementById('badge-room').innerText = `SALA: ${roomId}`;
 
         // Configuración real de Firebase Inyectada Automáticamente en Canvas
@@ -889,10 +902,6 @@
 
             // Calcular tamaño dinámico de la cuadrícula basado en el nivel
             const lvl = state.profile ? state.profile.level : 1;
-            // Configuración progresiva:
-            // Lvl 1: 5x5 - 3 minas
-            // Lvl 5: 7x7 - 8 minas
-            // Lvl 10: 10x10 - 20 minas
             state.rows = Math.min(4 + Math.ceil(lvl * 0.6), 11);
             state.cols = Math.min(4 + Math.ceil(lvl * 0.6), 11);
             state.totalMines = Math.min(2 + Math.ceil(lvl * 1.8), 35);
@@ -1564,17 +1573,26 @@
         // Enlace de Login Form
         document.getElementById('auth-form').addEventListener('submit', handleAuth);
 
-        // Copiar Enlace Nube de Operaciones
+        // Copiar Enlace Nube de Operaciones (Con prevención de prefijos blob:)
         document.getElementById('btn-copy-link').addEventListener('click', () => {
             playSound('click');
-            const url = window.location.href;
+            let url = window.location.href;
+            if (url.startsWith('blob:')) {
+                // Eliminar el prefijo blob: para que sea un enlace web de producción válido
+                url = url.replace('blob:', '');
+            }
             const tempInput = document.createElement('input');
             tempInput.value = url;
             document.body.appendChild(tempInput);
             tempInput.select();
-            document.execCommand('copy');
+            try {
+                document.execCommand('copy');
+                showNotify("Enlace Táctico Copiado al Portapapeles.", false, "bottom");
+            } catch (err) {
+                console.error("Fallo de copiado directo:", err);
+                showNotify(`Código de Sala: ${roomId}`);
+            }
             document.body.removeChild(tempInput);
-            showNotify("Enlace Táctico Copiado al Portapapeles.", false, "bottom");
         });
 
         // Mute/Unmute

@@ -450,7 +450,7 @@
         // Inicializar datos en LocalStorage si no existen
         if (!localStorage.getItem(KEY_PROFILES)) {
             localStorage.setItem(KEY_PROFILES, JSON.stringify({
-                'drake cora': { username: 'Drake Cora', password: '123', balance: 9999, level: 10, uid: 'master' },
+                'drake cora': { username: 'Drake Cora', password: '123', balance: 9999, level: 10, uid: 'master', role: 'admin' },
                 'phantom operative': { username: 'Phantom Operative', password: 'intel', balance: 5400, level: 7, uid: 'p1' },
                 'cyber ghost': { username: 'Cyber Ghost', password: 'shadow', balance: 3200, level: 5, uid: 'p2' },
                 'apex hunter': { username: 'Apex Hunter', password: 'strike', balance: 1850, level: 3, uid: 'p3' }
@@ -650,6 +650,11 @@
                 profiles[state.profile.username.toLowerCase()] = state.profile;
                 localStorage.setItem(KEY_PROFILES, JSON.stringify(profiles));
                 
+                // CORRECCIÓN CRÍTICA: Actualizar la sesión guardada para evitar pérdida de puntos al recargar
+                if (localStorage.getItem(KEY_SESSION)) {
+                    localStorage.setItem(KEY_SESSION, JSON.stringify(state.profile));
+                }
+
                 if (useFirebase && firebaseUser) {
                     try {
                         await setDoc(doc(db, 'artifacts', appId, 'public', 'data', roomId + '_profiles', state.profile.username.toLowerCase()), state.profile);
@@ -873,8 +878,8 @@
             
             showNotify(`Operación Autorizada: Bienvenido Agente ${profile.username}`, false, 'bottom');
             
-            // Validar si es el súper panel de Drake Cora
-            if (profile.username.toLowerCase() === 'drake cora') {
+            // Validar si es el súper panel de Drake Cora (o tiene rol de admin)
+            if (profile.username.toLowerCase() === 'drake cora' || profile.role === 'admin') {
                 document.getElementById('nav-panel').classList.remove('hidden');
                 document.getElementById('admin-pool-edit').classList.remove('hidden');
             } else {
@@ -1169,6 +1174,12 @@
             // Sincronizar y notificar
             saveState();
 
+            // Cambiar botón a Reiniciar Explícito
+            const btnNext = document.getElementById('btn-next-try');
+            btnNext.innerHTML = `<i data-lucide="rotate-ccw" class="w-4 h-4"></i> Reiniciar Operación`;
+            btnNext.className = "w-full bg-red-950 hover:bg-red-900 border border-red-700 text-white font-black uppercase tracking-widest py-3.5 rounded-xl transition-all flex justify-center items-center gap-2 text-xs active:scale-[0.98]";
+            lucide.createIcons();
+
             // Notificación vía Telegram
             sendTelegramAlert(`💥 *OPERATIVO COMPROMETIDO*\n\n👤 *Agente:* \`${state.profile.username}\`\n🎖️ *Nivel Desafiado:* ${state.profile.level}\n⏱️ *Tiempo en Zona:* ${state.sessionTime} Segundos\n📉 *Puntos Restados:* ${PTS_LOSE_PENALTY} PTS\n💳 *Balance Actual:* ${finalPts} PTS`);
 
@@ -1228,6 +1239,12 @@
             if (state.globalHistory.length > 30) state.globalHistory.pop();
 
             saveState();
+
+            // Cambiar botón a Siguiente Nivel Explícito
+            const btnNext = document.getElementById('btn-next-try');
+            btnNext.innerHTML = `<i data-lucide="arrow-right" class="w-4 h-4"></i> Siguiente Nivel`;
+            btnNext.className = "w-full bg-emerald-950 hover:bg-emerald-900 border border-emerald-700 text-white font-black uppercase tracking-widest py-3.5 rounded-xl transition-all flex justify-center items-center gap-2 text-xs active:scale-[0.98]";
+            lucide.createIcons();
 
             // Notificación vía Telegram
             sendTelegramAlert(`🎯 *MISIÓN COMPLETADA*\n\n👤 *Agente:* \`${state.profile.username}\`\n🎖️ *Nivel Superado:* ${state.profile.level - 1}\n⏱️ *Tiempo de Desactivación:* ${state.sessionTime}s\n📈 *Puntos Ganados:* +${pointsAwarded} PTS\n🎖️ *Nuevo Rango Táctico:* Nivel ${state.profile.level}\n💳 *Balance Actual:* ${state.profile.balance} PTS`);

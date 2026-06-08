@@ -137,7 +137,7 @@
                   <span class="text-[9px] font-black uppercase text-neutral-500 tracking-wider flex items-center gap-1.5">
                     <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Servidores Activos:
                   </span>
-                  <div id="active-agents-container" class="flex flex-wrap gap-1.5 text-[10px] font-bold">
+                  <div id="active-agents-container" class="flex flex-wrap gap-1.5 text-[10px] font-bold w-full sm:w-auto">
                     <span class="text-neutral-600 italic">Conectando canales...</span>
                   </div>
                 </div>
@@ -367,9 +367,10 @@
         </div>
     </div>
 
+    <!-- SCRIPT DE COMPLEMENTO COMPLETO -->
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
-        import { getAuth, signInAnonymously, signInWithCustomToken } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
         import { getFirestore, collection, doc, setDoc, updateDoc, onSnapshot, deleteDoc } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
 
         lucide.createIcons();
@@ -382,7 +383,7 @@
         // ESTADO GLOBAL COMPARTIDO
         const ADMIN_USER = 'drake cora';
         let isLoginMode = true;
-        let rememberMe = false;
+        let rememberMe = true;
         let currentUser = null;
         let users = [];
         let historyLogs = [];
@@ -405,16 +406,23 @@
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         function playTone(freq, type, duration) {
             if (isMuted || !audioCtx) return;
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.type = type;
-            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.start();
-            osc.stop(audioCtx.currentTime + duration);
+            try {
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + duration);
+            } catch (e) {
+                console.warn("Audio Context Error: ", e);
+            }
         }
 
         const sounds = {
@@ -425,878 +433,1084 @@
             alert: () => playTone(300, 'square', 0.2)
         };
 
-        const showToast = (msg, isError = false) => {
+        // NOTIFICACIONES FLOTANTES
+        function showNotification(text) {
             const container = document.getElementById('notification-container');
-            const text = document.getElementById('notification-msg');
-            text.innerText = msg;
-            text.className = `px-5 py-2.5 rounded-full font-black text-[10px] animate-bounce tracking-widest text-center uppercase whitespace-nowrap shadow-[0_0_20px_rgba(255,255,255,0.3)] ${isError ? 'bg-red-600 text-white' : 'bg-white text-black'}`;
+            const msg = document.getElementById('notification-msg');
+            msg.innerText = text;
             container.classList.remove('hidden');
             sounds.alert();
-            setTimeout(() => container.classList.add('hidden'), 3000);
-        };
+            setTimeout(() => {
+                container.classList.add('hidden');
+            }, 3000);
+        }
 
-        // Identificadores globales consistentes
-        const generateId = (username) => `global_${username.toLowerCase().replace(/\s+/g, '_')}`;
-        const getPublicRef = (col) => collection(db, 'artifacts', appId, 'public', 'data', col);
-
-        // --- INICIALIZACIÓN Y SINCRONIZACIÓN FIREBASE ---
-        const setupFirebase = async () => {
+        // TELEGRAM NOTIFICACIÓN
+        async function notifyTelegram(message) {
+            if (!adminSettings.telegramId) return;
+            const botToken = "7039201994:AAFGp0qZ-K67N6Wf-kHk-pE6x67j_g2W-6Y"; 
+            const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
             try {
-                const config = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
-                if (config) {
-                    app = initializeApp(config);
+                await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        chat_id: adminSettings.telegramId,
+                        text: `🚨 [DANGER MINES] 🚨\n\n${message}`,
+                        parse_mode: 'HTML'
+                    })
+                });
+            } catch (error) {
+                console.error("Telegram notify failed: ", error);
+            }
+        }
+
+        // INICIALIZACIÓN DE FIREBASE (Corregida condición de carrera)
+        async function setupFirebase() {
+            try {
+                if (typeof __firebase_config !== 'undefined' && __firebase_config) {
+                    const firebaseConfig = JSON.parse(__firebase_config);
+                    app = initializeApp(firebaseConfig);
                     auth = getAuth(app);
                     db = getFirestore(app);
-                    
+
+                    // Autenticación con Token Personalizado o Anónimo esperando a que resuelva (Regla 3)
                     if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                         await signInWithCustomToken(auth, __initial_auth_token);
                     } else {
                         await signInAnonymously(auth);
                     }
-                    
-                    firebaseUser = auth.currentUser;
-                    useFirebase = true;
-                    document.getElementById('badge-cloud').classList.remove('hidden');
-                    document.getElementById('badge-local').classList.add('hidden');
-                    setupRealtimeListeners();
+
+                    // Registrar el observador seguro tras garantizar el login exitoso
+                    onAuthStateChanged(auth, (user) => {
+                        if (user) {
+                            firebaseUser = user;
+                            useFirebase = true;
+                            document.getElementById('badge-cloud').classList.remove('hidden');
+                            document.getElementById('badge-local').classList.add('hidden');
+                            document.getElementById('auth-warning').classList.add('hidden'); // Ocultar warning
+                            initListeners();
+                        } else {
+                            if (useFirebase) {
+                                fallbackToLocal();
+                            }
+                        }
+                    });
                 } else {
-                    throw new Error("Sin configuración de Nube.");
+                    fallbackToLocal();
                 }
-            } catch (err) {
-                console.warn("Offline Mode");
-                document.getElementById('badge-local').classList.remove('hidden');
-                document.getElementById('badge-cloud').classList.add('hidden');
-                document.getElementById('auth-warning').classList.remove('hidden');
-                loadLocalData();
+            } catch (e) {
+                console.error("Firebase connection error: ", e);
+                fallbackToLocal();
             }
-            setTimeout(() => {
-                document.getElementById('loading-screen').classList.add('hidden');
-                checkSession();
-            }, 1000);
-        };
+        }
 
-        const setupRealtimeListeners = () => {
-            if (!firebaseUser) return;
+        function fallbackToLocal() {
+            useFirebase = false;
+            document.getElementById('badge-local').classList.remove('hidden');
+            document.getElementById('badge-cloud').classList.add('hidden');
+            document.getElementById('auth-warning').classList.remove('hidden');
+            
+            // Cargar datos locales de prueba
+            const savedUsers = localStorage.getItem('dm_local_users');
+            if (savedUsers) {
+                users = JSON.parse(savedUsers);
+            } else {
+                users = [
+                    { username: 'Drake Cora', password: '123', balance: 1500, level: 5, status: 'offline', last_active: Date.now() },
+                    { username: 'Agente Shadow', password: '123', balance: 840, level: 3, status: 'offline', last_active: Date.now() },
+                    { username: 'Alpha Team', password: '123', balance: 350, level: 1, status: 'offline', last_active: Date.now() }
+                ];
+                localStorage.setItem('dm_local_users', JSON.stringify(users));
+            }
 
-            // Escuchar todos los perfiles de agentes
-            onSnapshot(getPublicRef('danger_mines_profiles'), (snapshot) => {
+            const savedPool = localStorage.getItem('dm_local_pool');
+            if (savedPool) adminSettings.globalPool = savedPool;
+
+            const savedTg = localStorage.getItem('dm_local_tg');
+            if (savedTg) adminSettings.telegramId = savedTg;
+
+            const savedLogs = localStorage.getItem('dm_local_logs');
+            if (savedLogs) {
+                historyLogs = JSON.parse(savedLogs);
+            } else {
+                historyLogs = [
+                    { id: '1', msg: 'Enlace local establecido correctamente.', timestamp: Date.now() }
+                ];
+            }
+
+            renderAll();
+            hideLoading();
+        }
+
+        function hideLoading() {
+            document.getElementById('loading-screen').classList.add('hidden');
+            checkSavedSession();
+        }
+
+        // CONTROLADORES DE BASE DE DATOS (CON PATHS SEGÚN LA REGLA 1)
+        function initListeners() {
+            if (!useFirebase || !firebaseUser) return;
+
+            // 1. Escuchar usuarios públicos
+            const usersRef = collection(db, 'artifacts', appId, 'public', 'data', 'users');
+            onSnapshot(usersRef, (snapshot) => {
                 users = [];
-                snapshot.forEach(doc => users.push(doc.data()));
-                
-                renderRanking();
-                renderAdminUsers();
-                renderActiveAgents();
-                
-                // Si estoy logueado, sincronizar mis puntos de la BD a mi UI
-                if(currentUser) {
-                    const updatedMe = users.find(u => u.username === currentUser.username);
-                    if(updatedMe) {
-                        currentUser = updatedMe; // Toma el balance actual de la nube
-                        updateHeaderUI();        // Refresca la barra superior
-                    }
-                }
-            }, e => console.error("Snapshot Profiles Error", e));
+                snapshot.forEach((doc) => {
+                    users.push(doc.data());
+                });
+                renderAll();
+                hideLoading();
+            }, (error) => {
+                console.error("Users sync error:", error);
+            });
 
-            // Escuchar el historial global
-            onSnapshot(getPublicRef('danger_mines_history'), (snapshot) => {
+            // 2. Escuchar logs globales
+            const logsRef = collection(db, 'artifacts', appId, 'public', 'data', 'logs');
+            onSnapshot(logsRef, (snapshot) => {
                 historyLogs = [];
-                snapshot.forEach(doc => historyLogs.push(doc.data()));
+                snapshot.forEach((doc) => {
+                    historyLogs.push(doc.data());
+                });
+                // Ordenar por tiempo descendente en memoria (Regla 2: Sin queries complejas)
                 historyLogs.sort((a,b) => b.timestamp - a.timestamp);
                 renderHistory();
-            }, e => console.error("Snapshot History Error", e));
+            }, (error) => {
+                console.error("Logs sync error:", error);
+            });
 
-            // Escuchar configuraciones de administrador
-            onSnapshot(getPublicRef('danger_mines_settings'), (snapshot) => {
-                snapshot.forEach(doc => {
-                    if (doc.id === 'global_settings') {
+            // 3. Escuchar configuraciones globales (pozo, telegram, etc.)
+            const settingsRef = collection(db, 'artifacts', appId, 'public', 'data', 'settings');
+            onSnapshot(settingsRef, (snapshot) => {
+                snapshot.forEach((doc) => {
+                    if (doc.id === 'general') {
                         adminSettings = doc.data();
                         document.getElementById('prize-pool-display').innerText = adminSettings.globalPool || '1.5T';
                         document.getElementById('display-telegram-id').innerText = adminSettings.telegramId || 'Sin Configurar';
                     }
                 });
-            }, e => console.error("Snapshot Settings Error", e));
-        };
+            }, (error) => {
+                console.error("Settings sync error:", error);
+            });
+        }
 
-        const saveUser = async (userObj) => {
-            if(useFirebase && firebaseUser) {
-                try {
-                    await setDoc(doc(getPublicRef('danger_mines_profiles'), generateId(userObj.username)), userObj);
-                } catch(e) { console.error("Error saving user", e); }
+        // GUARDADO DE DATOS (REGLAS 1 Y 3)
+        async function saveUserToDB(userObj) {
+            if (useFirebase && firebaseUser) {
+                const userDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', userObj.username.toLowerCase());
+                await setDoc(userDocRef, userObj);
             } else {
-                const idx = users.findIndex(u => u.username === userObj.username);
-                if(idx > -1) users[idx] = userObj; else users.push(userObj);
-                localStorage.setItem(`dm_users_global`, JSON.stringify(users));
-                renderRanking(); renderAdminUsers(); renderActiveAgents();
+                const index = users.findIndex(u => u.username.toLowerCase() === userObj.username.toLowerCase());
+                if (index !== -1) users[index] = userObj;
+                else users.push(userObj);
+                localStorage.setItem('dm_local_users', JSON.stringify(users));
+                renderAll();
             }
-        };
+        }
 
-        const saveHistory = async (logObj) => {
-            if(useFirebase && firebaseUser) {
-                try {
-                    const ref = doc(getPublicRef('danger_mines_history'));
-                    await setDoc(ref, { ...logObj, id: ref.id });
-                } catch(e) { console.error("Error saving history", e); }
+        async function deleteUserFromDB(username) {
+            if (useFirebase && firebaseUser) {
+                const userDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', username.toLowerCase());
+                await deleteDoc(userDocRef);
             } else {
-                historyLogs.unshift(logObj);
-                localStorage.setItem(`dm_history_global`, JSON.stringify(historyLogs));
-                renderHistory();
+                users = users.filter(u => u.username.toLowerCase() !== username.toLowerCase());
+                localStorage.setItem('dm_local_users', JSON.stringify(users));
+                renderAll();
             }
-        };
+        }
 
-        const saveSettings = async () => {
-            if(useFirebase && firebaseUser) {
-                try {
-                    await setDoc(doc(getPublicRef('danger_mines_settings'), 'global_settings'), adminSettings);
-                } catch(e) {}
+        async function saveSettingsToDB() {
+            if (useFirebase && firebaseUser) {
+                const settingsDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'general');
+                await setDoc(settingsDocRef, adminSettings);
             } else {
-                localStorage.setItem(`dm_settings_global`, JSON.stringify(adminSettings));
-                document.getElementById('prize-pool-display').innerText = adminSettings.globalPool;
+                localStorage.setItem('dm_local_pool', adminSettings.globalPool);
+                localStorage.setItem('dm_local_tg', adminSettings.telegramId);
+                renderAll();
             }
-        };
+        }
 
-        const loadLocalData = () => {
-            users = JSON.parse(localStorage.getItem(`dm_users_global`)) || [];
-            historyLogs = JSON.parse(localStorage.getItem(`dm_history_global`)) || [];
-            adminSettings = JSON.parse(localStorage.getItem(`dm_settings_global`)) || { globalPool: '1.5T', telegramId: '' };
-            document.getElementById('prize-pool-display').innerText = adminSettings.globalPool;
-            renderRanking(); renderHistory(); renderAdminUsers(); renderActiveAgents();
-        };
-
-        // Mantener conectado al usuario actual (Heartbeat)
-        setInterval(async () => {
-            if (currentUser && useFirebase) {
-                currentUser.lastActive = Date.now();
-                await saveUser(currentUser);
-            }
-        }, 8000);
-
-        // --- STREAMING_CHUNK:Logica del Juego Principal ---
-        const resetGameLocal = () => {
-            clearInterval(timerInterval);
-            gameState = 'idle';
-            timeElapsed = 0;
-            flagsPlaced = 0;
-            sessionPoints = 0;
-            board = [];
-            
-            document.getElementById('game-time').innerText = '0';
-            document.getElementById('game-mines-left').innerText = gameConfig.mines;
-            document.getElementById('game-session-points').innerText = '+0';
-            document.getElementById('game-session-points').classList.remove('text-green-500');
-            document.getElementById('game-session-points').classList.add('text-neutral-500');
-            
-            document.getElementById('game-controls-idle').classList.remove('hidden');
-            document.getElementById('game-controls-playing').classList.add('hidden');
-            document.getElementById('game-controls-ended').classList.add('hidden');
-            
-            document.getElementById('tactical-header-card').classList.remove('tactical-glow', 'success-glow');
-            document.getElementById('result-overlay').classList.add('hidden');
-            
-            const gridEl = document.getElementById('mines-grid');
-            const standbyEl = document.getElementById('mines-standby');
-            gridEl.innerHTML = '';
-            gridEl.classList.add('hidden');
-            standbyEl.classList.remove('hidden');
-        };
-
-        const startGameLocal = () => {
-            resetGameLocal();
-            gameState = 'playing';
-            
-            document.getElementById('game-controls-idle').classList.add('hidden');
-            document.getElementById('game-controls-playing').classList.remove('hidden');
-            document.getElementById('game-controls-playing').classList.add('flex');
-            document.getElementById('tactical-header-card').classList.add('tactical-glow');
-            
-            const gridEl = document.getElementById('mines-grid');
-            const standbyEl = document.getElementById('mines-standby');
-            standbyEl.classList.add('hidden');
-            gridEl.classList.remove('hidden');
-            gridEl.style.gridTemplateColumns = `repeat(${gameConfig.cols}, minmax(0, 1fr))`;
-            
-            initBoard();
-            renderBoard();
-
-            clearInterval(timerInterval);
-            timerInterval = setInterval(() => {
-                timeElapsed++;
-                document.getElementById('game-time').innerText = timeElapsed;
-            }, 1000);
-        };
-
-        const initBoard = () => {
-            board = [];
-            for (let r = 0; r < gameConfig.rows; r++) {
-                let row = [];
-                for (let c = 0; c < gameConfig.cols; c++) {
-                    row.push({ r, c, isMine: false, revealed: false, flagged: false, adj: 0 });
-                }
-                board.push(row);
-            }
-            
-            let minesPlaced = 0;
-            while(minesPlaced < gameConfig.mines) {
-                let rr = Math.floor(Math.random() * gameConfig.rows);
-                let cc = Math.floor(Math.random() * gameConfig.cols);
-                if (!board[rr][cc].isMine) {
-                    board[rr][cc].isMine = true;
-                    minesPlaced++;
-                }
-            }
-            
-            for (let r = 0; r < gameConfig.rows; r++) {
-                for (let c = 0; c < gameConfig.cols; c++) {
-                    if (!board[r][c].isMine) {
-                        let count = 0;
-                        for(let dr=-1; dr<=1; dr++){
-                            for(let dc=-1; dc<=1; dc++){
-                                if(r+dr>=0 && r+dr<gameConfig.rows && c+dc>=0 && c+dc<gameConfig.cols) {
-                                    if(board[r+dr][c+dc].isMine) count++;
-                                }
-                            }
-                        }
-                        board[r][c].adj = count;
-                    }
-                }
-            }
-        };
-
-        const renderBoard = () => {
-            const gridEl = document.getElementById('mines-grid');
-            gridEl.innerHTML = '';
-            const cellClass = "cell w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center font-black text-sm sm:text-base cursor-pointer rounded bg-neutral-800 border-b-2 border-neutral-950 hover:bg-neutral-700 select-none";
-            
-            for (let r = 0; r < gameConfig.rows; r++) {
-                for (let c = 0; c < gameConfig.cols; c++) {
-                    const cell = board[r][c];
-                    const div = document.createElement('div');
-                    div.className = cellClass;
-                    div.dataset.r = r;
-                    div.dataset.c = c;
-                    
-                    if (cell.revealed) {
-                        div.classList.add('revealed');
-                        div.classList.remove('bg-neutral-800', 'border-b-2', 'hover:bg-neutral-700');
-                        if (cell.isMine) {
-                            div.classList.add('bg-red-900/50');
-                            div.innerHTML = `<i data-lucide="bomb" class="w-5 h-5 text-red-500 drop-shadow-[0_0_5px_rgba(239,68,68,0.8)]"></i>`;
-                        } else if (cell.adj > 0) {
-                            const colors = ['text-blue-400', 'text-green-400', 'text-red-400', 'text-purple-400', 'text-yellow-400', 'text-pink-400', 'text-teal-400', 'text-gray-400'];
-                            div.innerHTML = `<span class="${colors[cell.adj-1]}">${cell.adj}</span>`;
-                        }
-                    } else if (cell.flagged) {
-                        div.innerHTML = `<i data-lucide="flag" class="w-4 h-4 text-orange-500 fill-orange-500 animate-pulse"></i>`;
-                    }
-                    
-                    div.addEventListener('click', () => handleCellClick(r, c));
-                    div.addEventListener('contextmenu', (e) => { e.preventDefault(); toggleFlag(r, c); });
-                    
-                    gridEl.appendChild(div);
-                }
-            }
-            lucide.createIcons();
-        };
-
-        const handleCellClick = (r, c) => {
-            if (gameState !== 'playing') return;
-            if (currentMode === 'flag') toggleFlag(r, c);
-            else revealCell(r, c);
-        };
-
-        const toggleFlag = (r, c) => {
-            const cell = board[r][c];
-            if (cell.revealed) return;
-            
-            sounds.flag();
-            cell.flagged = !cell.flagged;
-            flagsPlaced += cell.flagged ? 1 : -1;
-            
-            document.getElementById('game-mines-left').innerText = gameConfig.mines - flagsPlaced;
-            renderBoard();
-        };
-
-        const revealCell = (r, c) => {
-            const cell = board[r][c];
-            if (cell.revealed || cell.flagged) return;
-            
-            let isFirstClick = board.flat().every(x => !x.revealed);
-            if(isFirstClick && cell.isMine) {
-               do { board = []; initBoard(); } while(board[r][c].isMine);
-               revealCell(r, c);
-               return;
-            }
-
-            sounds.click();
-            cell.revealed = true;
-            
-            if (cell.isMine) {
-                triggerGameOver(false);
-                return;
-            }
-            
-            sessionPoints += PTS_PER_CELL;
-            updateSessionPointsDisplay();
-
-            if (cell.adj === 0) revealNeighbors(r, c);
-            
-            renderBoard();
-
-            let won = true;
-            for (let i = 0; i < gameConfig.rows; i++) {
-                for (let j = 0; j < gameConfig.cols; j++) {
-                    if (!board[i][j].isMine && !board[i][j].revealed) won = false;
-                }
-            }
-
-            if (won) triggerGameOver(true);
-        };
-
-        const updateSessionPointsDisplay = () => {
-            const ptEl = document.getElementById('game-session-points');
-            ptEl.innerText = `+${sessionPoints}`;
-            ptEl.classList.remove('text-neutral-500');
-            ptEl.classList.add('text-green-500');
-        };
-
-        const revealNeighbors = (r, c) => {
-            for(let dr=-1; dr<=1; dr++){
-                for(let dc=-1; dc<=1; dc++){
-                    if(r+dr>=0 && r+dr<gameConfig.rows && c+dc>=0 && c+dc<gameConfig.cols) {
-                        const neighbor = board[r+dr][c+dc];
-                        if (!neighbor.revealed && !neighbor.flagged) {
-                            neighbor.revealed = true;
-                            sessionPoints += PTS_PER_CELL;
-                            if (neighbor.adj === 0) revealNeighbors(r+dr, c+dc);
-                        }
-                    }
-                }
-            }
-        };
-
-        const triggerGameOver = async (isWin) => {
-            gameState = isWin ? 'won' : 'lost';
-            clearInterval(timerInterval);
-            
-            board.forEach(row => row.forEach(cell => {
-                if(cell.isMine) cell.revealed = true;
-            }));
-            renderBoard();
-
-            let totalPointsEarned = sessionPoints;
-            if (isWin) {
-                totalPointsEarned += PTS_WIN_BONUS;
-                if (currentUser) {
-                    // SUMA AUTOMÁTICA Y GUARDADO GLOBAL
-                    currentUser.balance += totalPointsEarned;
-                    if (currentUser.balance >= currentUser.level * 300) {
-                        currentUser.level += 1;
-                        showToast(`¡Ascenso al Nivel ${currentUser.level}!`);
-                    }
-                    // Al guardar esto, el snapshot salta y todos en la app ven tu nuevo balance en el ranking
-                    await saveUser(currentUser);
-                    updateHeaderUI();
-                }
-            }
-
-            const logEntry = {
-                agent: currentUser ? currentUser.username : 'Agente Desconocido',
-                result: isWin ? 'ÉXITO TÁCTICO' : 'MISIÓN FALLIDA',
-                points: totalPointsEarned,
-                time: timeElapsed,
+        async function appendLogToDB(msgText) {
+            const logObj = {
+                id: crypto.randomUUID(),
+                msg: msgText,
                 timestamp: Date.now()
             };
-            // Al guardar el historial, aparecerá automáticamente en la pestaña de historial de todos
-            await saveHistory(logEntry);
-
-            document.getElementById('game-controls-playing').classList.add('hidden');
-            document.getElementById('game-controls-playing').classList.remove('flex');
-            document.getElementById('game-controls-ended').classList.remove('hidden');
-            
-            showOverlayResult(isWin);
-        };
-
-        const showOverlayResult = (isWin) => {
-            const card = document.getElementById('tactical-header-card');
-            card.classList.remove('tactical-glow');
-            
-            if (isWin) {
-                sounds.win();
-                card.classList.add('success-glow');
+            if (useFirebase && firebaseUser) {
+                const logDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'logs', logObj.id);
+                await setDoc(logDocRef, logObj);
             } else {
-                sounds.bomb();
+                historyLogs.unshift(logObj);
+                localStorage.setItem('dm_local_logs', JSON.stringify(historyLogs));
+                renderHistory();
             }
+        }
 
-            const overlay = document.getElementById('result-overlay');
-            const title = document.getElementById('result-title');
-            const detail = document.getElementById('result-detail');
-            const pts = document.getElementById('result-points');
-            const iconCont = document.getElementById('result-icon-container');
-
-            overlay.classList.remove('hidden');
-            let finalPts = sessionPoints + (isWin ? PTS_WIN_BONUS : 0);
-            
-            if (isWin) {
-                title.innerText = "Éxito Táctico";
-                title.className = "text-2xl font-black uppercase tracking-widest text-emerald-500 drop-shadow-[0_0_10px_rgba(16,185,129,0.5)]";
-                detail.innerText = `Completaste el sector en ${timeElapsed}s`;
-                pts.innerText = `+${finalPts} PTS`;
-                pts.className = "font-black text-xl mt-1 bg-emerald-950/50 inline-block px-4 py-1 rounded-full border text-emerald-400 border-emerald-500/50";
-                iconCont.innerHTML = `<div class="absolute inset-0 bg-emerald-500 blur-2xl opacity-30 rounded-full"></div><i data-lucide="shield-check" class="w-16 h-16 text-emerald-500 relative z-10"></i>`;
-            } else {
-                title.innerText = "Misión Fallida";
-                title.className = "text-2xl font-black uppercase tracking-widest text-red-500 drop-shadow-[0_0_10px_rgba(239,68,68,0.5)]";
-                detail.innerText = `Detonación en tus coordenadas. Tiempo: ${timeElapsed}s`;
-                pts.innerText = `+${finalPts} PTS Parciales`;
-                pts.className = "font-black text-xl mt-1 bg-red-950/50 inline-block px-4 py-1 rounded-full border text-red-400 border-red-500/50";
-                iconCont.innerHTML = `<div class="absolute inset-0 bg-red-500 blur-2xl opacity-30 rounded-full"></div><i data-lucide="skull" class="w-16 h-16 text-red-500 relative z-10"></i>`;
-            }
-            lucide.createIcons();
-        };
-
-        // --- STREAMING_CHUNK:Eventos y UI ---
-        const modalConfirm = document.getElementById('modal-tactical-confirm');
-        const showTacticalConfirm = () => {
-            modalConfirm.classList.remove('hidden');
-            sounds.alert();
-        };
-        const hideTacticalConfirm = () => modalConfirm.classList.add('hidden');
-
-        document.getElementById('btn-confirm-no').addEventListener('click', hideTacticalConfirm);
-        document.getElementById('btn-confirm-yes').addEventListener('click', () => {
-            hideTacticalConfirm();
-            triggerGameOver(false);
-        });
-
-        document.getElementById('btn-start-game').addEventListener('click', startGameLocal);
-        document.getElementById('btn-next-try').addEventListener('click', resetGameLocal);
-        document.getElementById('btn-abort').addEventListener('click', showTacticalConfirm);
-
-
-        // --- AUTENTICACIÓN ---
-        const checkSession = () => {
-            const saved = localStorage.getItem(`dm_session_global`);
+        // CONTROL DE SESIÓN (AUTENTICACIÓN MANUAL)
+        function checkSavedSession() {
+            const saved = localStorage.getItem('dm_remembered_agent');
             if (saved) {
-                const sessionUser = JSON.parse(saved);
-                setTimeout(() => {
-                    const realUser = users.find(u => u.username === sessionUser.username && u.password === sessionUser.password);
-                    if(realUser) {
-                        currentUser = realUser;
-                        completeLogin();
-                    } else {
-                        document.getElementById('auth-screen').classList.remove('hidden');
-                    }
-                }, 500);
-            } else {
-                document.getElementById('auth-screen').classList.remove('hidden');
+                const agent = JSON.parse(saved);
+                const matched = users.find(u => u.username.toLowerCase() === agent.username.toLowerCase() && u.password === agent.password);
+                if (matched) {
+                    loginAgent(matched);
+                    return;
+                }
             }
-        };
+            showAuthScreen();
+        }
 
-        document.getElementById('auth-switch-btn').addEventListener('click', () => {
-            isLoginMode = !isLoginMode;
-            document.getElementById('auth-switch-btn').innerText = isLoginMode ? "¿Nuevo Recluta? Iniciar Enlace" : "¿Agente Registrado? Acceder";
-            document.getElementById('auth-btn-text').innerText = isLoginMode ? "Iniciar Secuencia" : "Registrar Agente";
-            document.getElementById('auth-btn-icon').setAttribute('data-lucide', isLoginMode ? 'log-in' : 'user-plus');
-            lucide.createIcons();
-        });
+        function showAuthScreen() {
+            document.getElementById('auth-screen').classList.remove('hidden');
+            document.getElementById('app-screen').classList.add('hidden');
+        }
 
-        document.getElementById('toggle-password').addEventListener('click', () => {
-            const input = document.getElementById('auth-password');
-            const icon = document.getElementById('eye-icon');
-            if (input.type === 'password') {
-                input.type = 'text'; icon.setAttribute('data-lucide', 'eye-off');
-            } else {
-                input.type = 'password'; icon.setAttribute('data-lucide', 'eye');
-            }
-            lucide.createIcons();
-        });
+        function loginAgent(agent) {
+            currentUser = agent;
+            currentUser.status = 'online';
+            currentUser.last_active = Date.now();
+            saveUserToDB(currentUser);
 
-        document.getElementById('toggle-remember').addEventListener('click', () => {
-            rememberMe = !rememberMe;
-            const check = document.getElementById('remember-check');
-            const box = document.getElementById('remember-box');
-            if(rememberMe) {
-                check.classList.remove('hidden');
-                box.classList.add('bg-red-600', 'border-red-500');
-            } else {
-                check.classList.add('hidden');
-                box.classList.remove('bg-red-600', 'border-red-500');
-            }
-        });
-
-        document.getElementById('auth-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const uInput = document.getElementById('auth-username').value.trim();
-            const pInput = document.getElementById('auth-password').value;
-            
-            if(!uInput || !pInput) return showToast("Datos incompletos", true);
-
-            let found = users.find(u => u.username.toLowerCase() === uInput.toLowerCase());
-
-            if (isLoginMode) {
-                if (!found) return showToast("Agente no encontrado", true);
-                if (found.password !== pInput) return showToast("Código Inválido", true);
-                currentUser = found;
-                showToast(`Bienvenido, ${currentUser.username}`);
-            } else {
-                if (found) return showToast("El Alias ya está en uso", true);
-                const newUser = {
-                    username: uInput,
-                    password: pInput,
-                    level: 1,
-                    balance: 0,
-                    joinedAt: Date.now(),
-                    lastActive: Date.now()
-                };
-                await saveUser(newUser);
-                currentUser = newUser;
-                showToast("Registro Exitoso. Enlace Creado.");
-            }
-
+            // Guardar o borrar de localStorage según recordar
             if (rememberMe) {
-                localStorage.setItem(`dm_session_global`, JSON.stringify(currentUser));
+                localStorage.setItem('dm_remembered_agent', JSON.stringify(currentUser));
+            } else {
+                localStorage.removeItem('dm_remembered_agent');
             }
-            
-            completeLogin();
-        });
 
-        const completeLogin = () => {
-            document.getElementById('auth-screen').classList.add('hidden');
-            document.getElementById('app-screen').classList.remove('hidden');
-            document.getElementById('app-screen').classList.add('flex');
-            
-            updateHeaderUI();
-            
-            if(currentUser.username.toLowerCase() === ADMIN_USER) {
+            // Actualizar interfaz
+            document.getElementById('header-username').innerText = currentUser.username;
+            document.getElementById('header-balance').innerText = `${currentUser.balance} PTS`;
+            document.getElementById('wm-username').innerText = currentUser.username;
+            document.getElementById('wm-level').innerText = currentUser.level;
+
+            // Verificar si es administrador
+            if (currentUser.username.toLowerCase() === ADMIN_USER) {
                 document.getElementById('nav-panel').classList.remove('hidden');
                 document.getElementById('admin-pool-edit').classList.remove('hidden');
             } else {
                 document.getElementById('nav-panel').classList.add('hidden');
                 document.getElementById('admin-pool-edit').classList.add('hidden');
-                if(document.querySelector('.nav-btn[data-tab="panel"]').classList.contains('text-red-500')){
-                    switchTab('game');
+            }
+
+            document.getElementById('auth-screen').classList.add('hidden');
+            document.getElementById('app-screen').classList.remove('hidden');
+            appendLogToDB(`Agente ${currentUser.username} ha establecido conexión táctica.`);
+            
+            showTab('game');
+            resetGame();
+        }
+
+        // INTERFAZ DE NAVEGACIÓN Y RENDERIZACIÓN
+        function showTab(tabId) {
+            // Ocultar todas las secciones
+            document.getElementById('tab-game').classList.add('hidden');
+            document.getElementById('tab-ranking').classList.add('hidden');
+            document.getElementById('tab-panel').classList.add('hidden');
+            document.getElementById('tab-history').classList.add('hidden');
+
+            // Mostrar la correcta
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+
+            // Actualizar diseño de botones
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                if (btn.dataset.tab === tabId) {
+                    btn.classList.add('text-red-500');
+                    btn.classList.remove('text-neutral-600', 'hover:text-neutral-400');
+                } else {
+                    btn.classList.remove('text-red-500');
+                    btn.classList.add('text-neutral-600', 'hover:text-neutral-400');
+                }
+            });
+
+            if (tabId === 'panel') renderAdminPanel();
+            if (tabId === 'ranking') renderRanking();
+            if (tabId === 'history') renderHistory();
+        }
+
+        function renderAll() {
+            renderActiveAgents();
+            renderRanking();
+            renderHistory();
+            renderAdminPanel();
+            if (currentUser) {
+                const updatedMe = users.find(u => u.username.toLowerCase() === currentUser.username.toLowerCase());
+                if (updatedMe) {
+                    currentUser = updatedMe;
+                    document.getElementById('header-balance').innerText = `${currentUser.balance} PTS`;
                 }
             }
-            
-            resetGameLocal();
-        };
+        }
 
-        document.getElementById('btn-logout').addEventListener('click', () => {
-            localStorage.removeItem(`dm_session_global`);
-            currentUser = null;
-            document.getElementById('app-screen').classList.add('hidden');
-            document.getElementById('app-screen').classList.remove('flex');
-            document.getElementById('auth-screen').classList.remove('hidden');
-            resetGameLocal();
-        });
-
-        const updateHeaderUI = () => {
-            if(!currentUser) return;
-            document.getElementById('header-username').innerText = currentUser.username;
-            document.getElementById('header-balance').innerText = `${currentUser.balance} PTS`;
-            document.getElementById('game-level').innerText = `Nivel ${currentUser.level}`;
-            
-            const balContainer = document.getElementById('header-balance-container');
-            balContainer.classList.add('scale-110', 'bg-neutral-800');
-            setTimeout(()=> balContainer.classList.remove('scale-110', 'bg-neutral-800'), 300);
-        };
-
-        const renderActiveAgents = () => {
+        function renderActiveAgents() {
             const container = document.getElementById('active-agents-container');
             container.innerHTML = '';
+            // Agentes activos en los últimos 5 minutos
+            const activeThreshold = Date.now() - (5 * 60 * 1000);
+            const activeOnes = users.filter(u => u.status === 'online' || u.last_active > activeThreshold);
             
-            const now = Date.now();
-            const activeNow = users.filter(u => u.lastActive && (now - u.lastActive < 20000));
-            
-            if (activeNow.length === 0) {
+            if (activeOnes.length === 0) {
                 container.innerHTML = `<span class="text-neutral-600 italic">No hay agentes activos</span>`;
                 return;
             }
-            
-            activeNow.forEach(u => {
+
+            activeOnes.forEach(u => {
+                const isMe = currentUser && u.username.toLowerCase() === currentUser.username.toLowerCase();
                 const badge = document.createElement('span');
-                badge.className = "flex items-center gap-1 bg-emerald-950/40 text-emerald-400 border border-emerald-800/60 px-2 py-0.5 rounded-full";
-                badge.innerHTML = `<span class="w-1 h-1 rounded-full bg-emerald-400"></span> ${u.username}`;
+                badge.className = `px-2 py-0.5 rounded-full border text-[9px] uppercase tracking-wider flex items-center gap-1 font-black ${
+                    isMe ? 'bg-red-950/40 text-red-400 border-red-500/50' : 'bg-neutral-900 text-neutral-400 border-neutral-800'
+                }`;
+                badge.innerHTML = `<span class="w-1 h-1 rounded-full bg-emerald-500 animate-pulse"></span> ${u.username}`;
                 container.appendChild(badge);
             });
-        };
+        }
 
-        // --- STREAMING_CHUNK:Visualizaciones e Interfaz Secundarias ---
-        const switchTab = (tabId) => {
-            ['tab-game', 'tab-history', 'tab-ranking', 'tab-panel'].forEach(id => {
-                document.getElementById(id).classList.add('hidden');
-            });
-            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
-
-            document.querySelectorAll('.nav-btn').forEach(btn => {
-                btn.classList.remove('text-red-500');
-                btn.classList.add('text-neutral-600');
-                btn.querySelector('i').classList.remove('fill-current');
-            });
-            
-            const activeBtn = document.querySelector(`.nav-btn[data-tab="${tabId}"]`);
-            if(activeBtn) {
-                activeBtn.classList.remove('text-neutral-600');
-                activeBtn.classList.add('text-red-500');
-                activeBtn.querySelector('i').classList.add('fill-current');
-            }
-        };
-
-        document.querySelectorAll('.nav-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => switchTab(e.currentTarget.getAttribute('data-tab')));
-        });
-
-        const btnDig = document.getElementById('btn-mode-dig');
-        const btnFlag = document.getElementById('btn-mode-flag');
-        
-        const setMode = (mode) => {
-            currentMode = mode;
-            if(mode === 'dig') {
-                btnDig.className = "flex-1 rounded-xl font-black text-[10px] uppercase tracking-wider flex justify-center items-center gap-1.5 transition-all bg-red-600 text-white shadow-inner py-3 border border-red-500";
-                btnFlag.className = "flex-1 rounded-xl font-black text-[10px] uppercase tracking-wider flex justify-center items-center gap-1.5 transition-all bg-neutral-950 text-neutral-500 border border-neutral-800 py-3";
-            } else {
-                btnFlag.className = "flex-1 rounded-xl font-black text-[10px] uppercase tracking-wider flex justify-center items-center gap-1.5 transition-all bg-red-600 text-white shadow-inner py-3 border border-red-500";
-                btnDig.className = "flex-1 rounded-xl font-black text-[10px] uppercase tracking-wider flex justify-center items-center gap-1.5 transition-all bg-neutral-950 text-neutral-500 border border-neutral-800 py-3";
-            }
-        };
-
-        btnDig.addEventListener('click', () => setMode('dig'));
-        btnFlag.addEventListener('click', () => setMode('flag'));
-
-        const renderHistory = () => {
-            const container = document.getElementById('history-container');
-            container.innerHTML = '';
-            if(historyLogs.length === 0) {
-                container.innerHTML = `<p class="text-center text-xs text-neutral-600 font-black uppercase tracking-wider py-8">Sin registros operativos</p>`;
-                return;
-            }
-            
-            historyLogs.slice(0, 20).forEach(log => {
-                const date = new Date(log.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                const isWin = log.result === 'ÉXITO TÁCTICO';
-                const el = document.createElement('div');
-                el.className = `flex justify-between items-center bg-neutral-900 border-l-4 ${isWin ? 'border-emerald-500' : 'border-red-600'} rounded-r-xl p-3 shadow-sm`;
-                el.innerHTML = `
-                    <div class="flex flex-col">
-                      <span class="text-[11px] font-black uppercase tracking-widest ${isWin ? 'text-emerald-500' : 'text-red-500'}">${log.result}</span>
-                      <span class="text-xs font-bold text-white">${log.agent} <span class="text-neutral-500 text-[10px] font-normal ml-1">⏱ ${log.time}s</span></span>
-                    </div>
-                    <div class="flex flex-col items-end">
-                      <span class="text-xs font-black text-white">+${log.points} PTS</span>
-                      <span class="text-[9px] text-neutral-500 font-mono">${date}</span>
-                    </div>
-                `;
-                container.appendChild(el);
-            });
-        };
-
-        const renderRanking = () => {
+        function renderRanking() {
             const container = document.getElementById('ranking-container');
             container.innerHTML = '';
             
-            const sortedUsers = [...users].sort((a,b) => b.balance - a.balance).slice(0, 10);
-            
-            if(sortedUsers.length === 0) {
-                container.innerHTML = `<p class="text-center text-xs text-neutral-600 font-black uppercase tracking-wider py-8 bg-neutral-900">Pozo Vacío</p>`;
+            // Ordenar en base a balance descendente (Client-side para cumplir Regla 2)
+            const sorted = [...users].sort((a,b) => b.balance - a.balance);
+
+            if (sorted.length === 0) {
+                container.innerHTML = `<div class="p-4 text-center text-xs text-neutral-500">Ningún agente registrado en el ranking global.</div>`;
                 return;
             }
 
-            sortedUsers.forEach((u, idx) => {
-                const el = document.createElement('div');
-                el.className = `flex items-center justify-between p-3 border-b border-neutral-800/50 last:border-0 ${idx < 3 ? 'bg-neutral-800/20' : 'bg-neutral-900'}`;
-                
-                let rankIcon = `<span class="text-neutral-500 font-black w-6 text-center text-xs">#${idx+1}</span>`;
-                if(idx === 0) rankIcon = `<i data-lucide="crown" class="w-5 h-5 text-yellow-400 fill-yellow-400 drop-shadow-[0_0_5px_rgba(250,204,21,0.5)]"></i>`;
-                if(idx === 1) rankIcon = `<i data-lucide="award" class="w-5 h-5 text-neutral-300"></i>`;
-                if(idx === 2) rankIcon = `<i data-lucide="award" class="w-5 h-5 text-amber-600"></i>`;
+            sorted.forEach((u, i) => {
+                const isMe = currentUser && u.username.toLowerCase() === currentUser.username.toLowerCase();
+                const rankRow = document.createElement('div');
+                rankRow.className = `flex justify-between items-center p-3.5 border-b border-neutral-800/60 last:border-0 ${
+                    isMe ? 'bg-red-950/20' : 'hover:bg-neutral-900/50'
+                } transition-colors`;
 
-                el.innerHTML = `
+                let medal = `<span class="font-mono text-neutral-500 text-xs">${i+1}</span>`;
+                if (i === 0) medal = `🥇`;
+                else if (i === 1) medal = `🥈`;
+                else if (i === 2) medal = `🥉`;
+
+                rankRow.innerHTML = `
                     <div class="flex items-center gap-3">
-                       <div class="w-8 flex justify-center">${rankIcon}</div>
-                       <div class="flex flex-col">
-                         <span class="text-xs font-black text-white uppercase tracking-wider">${u.username}</span>
-                         <span class="text-[9px] text-neutral-500 font-bold uppercase tracking-widest">Nivel ${u.level}</span>
+                       <div class="w-6 text-center">${medal}</div>
+                       <div>
+                         <p class="text-xs font-black uppercase tracking-wider ${isMe ? 'text-red-400' : 'text-neutral-200'}">${u.username}</p>
+                         <p class="text-[8px] font-black uppercase text-neutral-500 tracking-wider">Nivel Táctico: ${u.level}</p>
                        </div>
                     </div>
-                    <div class="text-xs font-black text-yellow-500 bg-yellow-500/10 px-2 py-1 rounded border border-yellow-500/20 shadow-inner">
-                       ${u.balance} PTS
+                    <div class="text-right">
+                       <p class="text-xs font-black text-yellow-500">${u.balance} PTS</p>
                     </div>
                 `;
-                container.appendChild(el);
+                container.appendChild(rankRow);
+            });
+        }
+
+        function renderHistory() {
+            const container = document.getElementById('history-container');
+            container.innerHTML = '';
+
+            if (historyLogs.length === 0) {
+                container.innerHTML = `<div class="text-center p-4 text-xs text-neutral-600 italic">No hay registros tácticos registrados.</div>`;
+                return;
+            }
+
+            historyLogs.slice(0, 30).forEach(log => {
+                const date = new Date(log.timestamp).toLocaleTimeString();
+                const item = document.createElement('div');
+                item.className = 'bg-neutral-900/80 border border-neutral-800/80 p-3 rounded-xl flex gap-3 items-start';
+                item.innerHTML = `
+                    <i data-lucide="terminal" class="w-3.5 h-3.5 text-neutral-600 shrink-0 mt-0.5"></i>
+                    <div class="flex-1">
+                      <p class="text-[10px] text-neutral-300 font-bold tracking-wide">${log.msg}</p>
+                      <span class="text-[8px] text-neutral-600 font-black tracking-widest mt-1 block">${date}</span>
+                    </div>
+                `;
+                container.appendChild(item);
             });
             lucide.createIcons();
-        };
+        }
 
-        const renderAdminUsers = () => {
-            if(!currentUser || currentUser.username.toLowerCase() !== ADMIN_USER) return;
+        function renderAdminPanel() {
+            if (!currentUser || currentUser.username.toLowerCase() !== ADMIN_USER) return;
             const container = document.getElementById('admin-users-list');
             container.innerHTML = '';
-            
+
             users.forEach(u => {
-                const el = document.createElement('div');
-                el.className = "flex justify-between items-center bg-neutral-950 border border-neutral-800 p-3 rounded-xl";
-                el.innerHTML = `
-                    <div class="flex flex-col">
-                        <span class="text-xs font-black text-white">${u.username}</span>
-                        <span class="text-[10px] text-neutral-500">Lv: ${u.level} | Pts: ${u.balance} | Pwd: ${u.password}</span>
+                const row = document.createElement('div');
+                row.className = 'bg-neutral-950 border border-neutral-800 p-3.5 rounded-xl flex justify-between items-center gap-3';
+                row.innerHTML = `
+                    <div>
+                      <p class="text-xs font-black uppercase text-white">${u.username}</p>
+                      <p class="text-[9px] font-mono text-neutral-500 mt-1">Clave: <span class="text-neutral-300">${u.password}</span> | Nivel: ${u.level} | Balance: ${u.balance} PTS</p>
                     </div>
-                    <button class="btn-admin-edit p-2 bg-neutral-900 border border-neutral-800 rounded-lg text-neutral-400 hover:text-white" data-user="${u.username}">
+                    <div class="flex gap-1.5">
+                      <button data-username="${u.username}" class="btn-edit-usr p-1.5 rounded-lg bg-neutral-900 border border-neutral-800 hover:text-white text-red-500 transition-colors">
                         <i data-lucide="edit" class="w-3.5 h-3.5"></i>
-                    </button>
+                      </button>
+                      <button data-username="${u.username}" class="btn-delete-usr p-1.5 rounded-lg bg-neutral-900 border border-neutral-800 hover:bg-red-950 hover:text-red-500 text-neutral-500 transition-all">
+                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                      </button>
+                    </div>
                 `;
-                container.appendChild(el);
+                container.appendChild(row);
             });
-            lucide.createIcons();
-            
-            document.querySelectorAll('.btn-admin-edit').forEach(btn => {
+
+            // Registrar listeners para botones dinámicos de administración
+            document.querySelectorAll('.btn-edit-usr').forEach(btn => {
                 btn.addEventListener('click', (e) => {
-                    const un = e.currentTarget.getAttribute('data-user');
-                    openEditModal(un);
+                    const matchedUser = users.find(u => u.username.toLowerCase() === btn.dataset.username.toLowerCase());
+                    if (matchedUser) openEditUserModal(matchedUser);
                 });
             });
-        };
 
-        document.getElementById('btn-copy-link').addEventListener('click', () => {
-            const url = window.location.href.split('?')[0]; // Copiar enlace limpio
-            navigator.clipboard.writeText(url).then(() => {
-                showToast("Enlace de Juego Copiado");
-            }).catch(() => {
-                const dummy = document.createElement('input');
-                document.body.appendChild(dummy);
-                dummy.value = url;
-                dummy.select();
-                document.execCommand('copy');
-                document.body.removeChild(dummy);
-                showToast("Enlace de Juego Copiado");
+            document.querySelectorAll('.btn-delete-usr').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    if (confirm(`¿Confirma eliminar definitivamente al agente ${btn.dataset.username}?`)) {
+                        await deleteUserFromDB(btn.dataset.username);
+                        showNotification('Operativo eliminado con éxito');
+                    }
+                });
             });
-        });
 
-        document.getElementById('btn-mute').addEventListener('click', () => {
-            isMuted = !isMuted;
-            const icon = document.getElementById('mute-icon');
-            if(isMuted) {
-                icon.setAttribute('data-lucide', 'volume-x');
-                icon.classList.replace('text-neutral-400', 'text-red-500');
+            lucide.createIcons();
+        }
+
+        function openEditUserModal(userObj) {
+            document.getElementById('edit-orig-user').value = userObj.username;
+            document.getElementById('edit-username').value = userObj.username;
+            document.getElementById('edit-password').value = userObj.password;
+            document.getElementById('edit-level').value = userObj.level;
+            document.getElementById('edit-balance').value = userObj.balance;
+            document.getElementById('modal-edit-user').classList.remove('hidden');
+        }
+
+        // LÓGICA DEL MOTOR MINESWEEPER
+        function resetGame() {
+            clearInterval(timerInterval);
+            timerInterval = null;
+            gameState = 'idle';
+            timeElapsed = 0;
+            flagsPlaced = 0;
+            sessionPoints = 0;
+            currentMode = 'dig';
+            
+            // Actualizar UI
+            document.getElementById('game-time').innerText = '0';
+            document.getElementById('game-mines-left').innerText = gameConfig.mines;
+            document.getElementById('game-session-points').innerText = '+0';
+            document.getElementById('game-session-points').className = 'flex items-center gap-1.5 px-3 py-1.5 border-r border-neutral-800 font-black text-neutral-500';
+            
+            document.getElementById('game-controls-idle').classList.remove('hidden');
+            document.getElementById('game-controls-playing').classList.add('hidden');
+            document.getElementById('game-controls-ended').classList.add('hidden');
+
+            document.getElementById('mines-grid').innerHTML = '';
+            document.getElementById('mines-standby').classList.remove('hidden');
+            document.getElementById('result-overlay').classList.add('hidden');
+            
+            // Ajustar configuraciones según el nivel táctico del jugador
+            if (currentUser) {
+                document.getElementById('game-level').innerText = `Nivel ${currentUser.level}`;
+                // Escalabilidad de dificultad
+                gameConfig.rows = 8 + Math.min(currentUser.level, 4); 
+                gameConfig.cols = 8 + Math.min(currentUser.level, 4); 
+                gameConfig.mines = 10 + (currentUser.level * 2);
+                document.getElementById('game-mines-left').innerText = gameConfig.mines;
+            }
+        }
+
+        function startGame() {
+            sounds.click();
+            gameState = 'playing';
+            document.getElementById('game-controls-idle').classList.add('hidden');
+            document.getElementById('game-controls-playing').classList.remove('hidden');
+            document.getElementById('mines-standby').classList.add('hidden');
+            
+            buildBoard();
+            renderBoard();
+            startTimer();
+        }
+
+        function startTimer() {
+            const timerIcon = document.getElementById('game-timer-icon');
+            timerInterval = setInterval(() => {
+                timeElapsed++;
+                document.getElementById('game-time').innerText = timeElapsed;
+                // Pequeña animación de latido táctico en el icono del temporizador
+                timerIcon.classList.toggle('text-red-500');
+            }, 1000);
+        }
+
+        function buildBoard() {
+            board = [];
+            for (let r = 0; r < gameConfig.rows; r++) {
+                const row = [];
+                for (let c = 0; c < gameConfig.cols; c++) {
+                    row.push({
+                        r, c,
+                        isMine: false,
+                        isRevealed: false,
+                        isFlagged: false,
+                        adjacentMines: 0
+                    });
+                }
+                board.push(row);
+            }
+        }
+
+        // Poner minas asegurándose que el primer clic siempre sea seguro
+        function placeMines(firstRow, firstCol) {
+            let placed = 0;
+            while (placed < gameConfig.mines) {
+                const r = Math.floor(Math.random() * gameConfig.rows);
+                const c = Math.floor(Math.random() * gameConfig.cols);
+
+                // Evitar el primer clic y sus celdas adyacentes para una experiencia óptima
+                const isFirstClickArea = Math.abs(r - firstRow) <= 1 && Math.abs(c - firstCol) <= 1;
+
+                if (!board[r][c].isMine && !isFirstClickArea) {
+                    board[r][c].isMine = true;
+                    placed++;
+                }
+            }
+
+            // Calcular números adyacentes
+            for (let r = 0; r < gameConfig.rows; r++) {
+                for (let c = 0; c < gameConfig.cols; c++) {
+                    if (board[r][c].isMine) continue;
+                    let count = 0;
+                    for (let dr = -1; dr <= 1; dr++) {
+                        for (let dc = -1; dc <= 1; dc++) {
+                            const nr = r + dr;
+                            const nc = c + dc;
+                            if (nr >= 0 && nr < gameConfig.rows && nc >= 0 && nc < gameConfig.cols) {
+                                if (board[nr][nc].isMine) count++;
+                            }
+                        }
+                    }
+                    board[r][c].adjacentMines = count;
+                }
+            }
+        }
+
+        function renderBoard() {
+            const grid = document.getElementById('mines-grid');
+            grid.innerHTML = '';
+            grid.style.gridTemplateColumns = `repeat(${gameConfig.cols}, minmax(0, 1fr))`;
+
+            for (let r = 0; r < gameConfig.rows; r++) {
+                for (let c = 0; c < gameConfig.cols; c++) {
+                    const cellData = board[r][c];
+                    const cellEl = document.createElement('button');
+                    cellEl.dataset.r = r;
+                    cellEl.dataset.c = c;
+                    cellEl.className = `cell w-8 h-8 sm:w-10 sm:h-10 text-xs font-black rounded-lg border border-neutral-800 bg-neutral-900 flex items-center justify-center transition-all focus:outline-none select-none`;
+
+                    // Touch events y Mouse Click unificados
+                    cellEl.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        handleCellInteraction(r, c);
+                    });
+
+                    // Clic derecho para colocar banderas
+                    cellEl.addEventListener('contextmenu', (e) => {
+                        e.preventDefault();
+                        toggleFlag(r, c);
+                    });
+
+                    grid.appendChild(cellEl);
+                }
+            }
+        }
+
+        function handleCellInteraction(r, c) {
+            if (gameState !== 'playing') return;
+            if (currentMode === 'flag') {
+                toggleFlag(r, c);
             } else {
-                icon.setAttribute('data-lucide', 'volume-2');
-                icon.classList.replace('text-red-500', 'text-neutral-400');
-                sounds.click();
+                revealCell(r, c);
+            }
+        }
+
+        function toggleFlag(r, c) {
+            const cell = board[r][c];
+            if (cell.isRevealed) return;
+
+            sounds.flag();
+            cell.isFlagged = !cell.isFlagged;
+            flagsPlaced += cell.isFlagged ? 1 : -1;
+            
+            const minesLeft = Math.max(0, gameConfig.mines - flagsPlaced);
+            document.getElementById('game-mines-left').innerText = minesLeft;
+
+            updateCellUI(r, c);
+        }
+
+        function revealCell(r, c) {
+            const cell = board[r][c];
+            if (cell.isRevealed || cell.isFlagged) return;
+
+            // Primer clic seguro
+            const isFirstClick = !board.some(row => row.some(cell => cell.isRevealed));
+            if (isFirstClick) {
+                placeMines(r, c);
+            }
+
+            cell.isRevealed = true;
+            sounds.click();
+
+            if (cell.isMine) {
+                triggerLoss(r, c);
+                return;
+            }
+
+            // Incrementar puntuación temporal de la ronda
+            sessionPoints += PTS_PER_CELL;
+            document.getElementById('game-session-points').innerText = `+${sessionPoints}`;
+            document.getElementById('game-session-points').className = 'flex items-center gap-1.5 px-3 py-1.5 border-r border-neutral-800 font-black text-emerald-500';
+
+            if (cell.adjacentMines === 0) {
+                // Revelar adyacentes vacíos de forma recursiva
+                for (let dr = -1; dr <= 1; dr++) {
+                    for (let dc = -1; dc <= 1; dc++) {
+                        const nr = r + dr;
+                        const nc = c + dc;
+                        if (nr >= 0 && nr < gameConfig.rows && nc >= 0 && nc < gameConfig.cols) {
+                            revealCell(nr, nc);
+                        }
+                    }
+                }
+            }
+
+            updateCellUI(r, c);
+            checkWinCondition();
+        }
+
+        function updateCellUI(r, c) {
+            const cell = board[r][c];
+            const cellEl = document.querySelector(`.cell[data-r="${r}"][data-c="${c}"]`);
+            if (!cellEl) return;
+
+            if (cell.isRevealed) {
+                cellEl.classList.add('revealed');
+                cellEl.classList.remove('bg-neutral-900');
+                
+                if (cell.isMine) {
+                    cellEl.innerHTML = `<i data-lucide="bomb" class="w-4 h-4 text-red-500"></i>`;
+                } else if (cell.adjacentMines > 0) {
+                    const colors = [
+                        'text-blue-400', 'text-emerald-400', 'text-red-400', 
+                        'text-purple-400', 'text-yellow-400', 'text-cyan-400', 
+                        'text-pink-400', 'text-orange-400'
+                    ];
+                    cellEl.className += ` ${colors[cell.adjacentMines - 1]}`;
+                    cellEl.innerText = cell.adjacentMines;
+                } else {
+                    cellEl.innerText = '';
+                }
+            } else if (cell.isFlagged) {
+                cellEl.innerHTML = `<i data-lucide="flag" class="w-4 h-4 text-red-500 fill-current"></i>`;
+            } else {
+                cellEl.innerHTML = '';
             }
             lucide.createIcons();
-        });
+        }
 
-        document.getElementById('btn-share').addEventListener('click', () => {
-            const zone = document.getElementById('capture-zone');
-            const wm = document.getElementById('capture-watermark');
-            const btnShare = document.getElementById('btn-share');
+        function triggerLoss(hitR, hitC) {
+            gameState = 'lost';
+            clearInterval(timerInterval);
+            sounds.bomb();
+
+            // Revelar todas las minas restantes
+            for (let r = 0; r < gameConfig.rows; r++) {
+                for (let c = 0; c < gameConfig.cols; c++) {
+                    if (board[r][c].isMine) {
+                        board[r][c].isRevealed = true;
+                        updateCellUI(r, c);
+                    }
+                }
+            }
+
+            // Resaltar la mina que explotó
+            const explodedEl = document.querySelector(`.cell[data-r="${hitR}"][data-c="${hitC}"]`);
+            if (explodedEl) explodedEl.classList.add('bg-red-950/60', 'border-red-600', 'tactical-glow');
+
+            document.getElementById('game-controls-playing').classList.add('hidden');
+            document.getElementById('game-controls-ended').classList.remove('hidden');
+
+            appendLogToDB(`Agente ${currentUser.username} cayó en una mina táctica en Nivel ${currentUser.level}.`);
+            notifyTelegram(`Agente 👤 <b>${currentUser.username}</b> falló la misión al explotar una mina en el Nivel <b>${currentUser.level}</b>.`);
+
+            showResultScreen(false);
+        }
+
+        function checkWinCondition() {
+            let unrevealedSafeCells = 0;
+            for (let r = 0; r < gameConfig.rows; r++) {
+                for (let c = 0; c < gameConfig.cols; c++) {
+                    if (!board[r][c].isMine && !board[r][c].isRevealed) {
+                        unrevealedSafeCells++;
+                    }
+                }
+            }
+
+            if (unrevealedSafeCells === 0) {
+                triggerWin();
+            }
+        }
+
+        async function triggerWin() {
+            gameState = 'won';
+            clearInterval(timerInterval);
+            sounds.win();
+
+            const finalPoints = sessionPoints + PTS_WIN_BONUS;
+            currentUser.balance += finalPoints;
+            // Incrementar nivel si supera la prueba
+            currentUser.level += 1;
+            await saveUserToDB(currentUser);
+
+            document.getElementById('game-controls-playing').classList.add('hidden');
+            document.getElementById('game-controls-ended').classList.remove('hidden');
+
+            appendLogToDB(`Agente ${currentUser.username} completó con éxito el Nivel ${currentUser.level - 1} (+${finalPoints} PTS).`);
+            notifyTelegram(`Agente 👤 <b>${currentUser.username}</b> superó con éxito el Nivel <b>${currentUser.level - 1}</b> de forma limpia y segura, sumando <b>+${finalPoints} PTS</b>.`);
+
+            showResultScreen(true, finalPoints);
+        }
+
+        function showResultScreen(isVictory, pts = 0) {
+            const overlay = document.getElementById('result-overlay');
+            const iconContainer = document.getElementById('result-icon-container');
+            const title = document.getElementById('result-title');
+            const points = document.getElementById('result-points');
+            const detail = document.getElementById('result-detail');
+
+            overlay.classList.remove('hidden');
+
+            if (isVictory) {
+                iconContainer.innerHTML = `
+                    <div class="absolute inset-0 border border-emerald-500 rounded-full animate-ping opacity-30"></div>
+                    <div class="p-6 bg-emerald-950/80 rounded-full border border-emerald-500/50 text-emerald-500 success-glow">
+                      <i data-lucide="shield-check" class="w-16 h-16 mx-auto"></i>
+                    </div>
+                `;
+                title.innerText = 'OPERACIÓN LIMPIA';
+                title.className = 'text-2xl font-black uppercase tracking-widest text-emerald-500 drop-shadow-[0_0_15px_rgba(16,185,129,0.5)]';
+                points.innerText = `+${pts} PTS`;
+                points.className = 'font-black text-xl mt-2 bg-emerald-950/80 text-emerald-400 inline-block px-5 py-1.5 rounded-full border border-emerald-500/30 shadow-lg';
+                detail.innerText = `Despeje total de minas en ${timeElapsed}s. Enlace de nivel ascendente activado.`;
+            } else {
+                iconContainer.innerHTML = `
+                    <div class="absolute inset-0 border border-red-500 rounded-full animate-ping opacity-30"></div>
+                    <div class="p-6 bg-red-950/80 rounded-full border border-red-500/50 text-red-500 tactical-glow">
+                      <i data-lucide="shield-alert" class="w-16 h-16 mx-auto"></i>
+                    </div>
+                `;
+                title.innerText = 'CONEXIÓN PERDIDA';
+                title.className = 'text-2xl font-black uppercase tracking-widest text-red-500 drop-shadow-[0_0_15px_rgba(220,38,38,0.5)]';
+                points.innerText = `+0 PTS`;
+                points.className = 'font-black text-xl mt-2 bg-red-950/80 text-red-500 inline-block px-5 py-1.5 rounded-full border border-red-500/30 shadow-lg';
+                detail.innerText = `Has detonado un artefacto explosivo en ${timeElapsed}s. Intenta nuevamente.`;
+            }
+            lucide.createIcons();
+        }
+
+        // CONFIRMACIONES Y MODALES TÁCTICOS
+        function showAbortConfirmation() {
+            sounds.alert();
+            document.getElementById('modal-tactical-confirm').classList.remove('hidden');
+        }
+
+        function hideAbortConfirmation() {
+            document.getElementById('modal-tactical-confirm').classList.add('hidden');
+        }
+
+        // FUNCIÓN COMPARTIR Y EXPORTAR (HTML2Canvas)
+        async function captureDashboard() {
+            sounds.click();
+            const watermark = document.getElementById('capture-watermark');
+            const shareBtn = document.getElementById('btn-share');
             
-            document.getElementById('wm-username').innerText = currentUser.username;
-            document.getElementById('wm-level').innerText = currentUser.level;
-            
-            wm.classList.remove('hidden');
-            btnShare.classList.add('hidden');
-            
-            html2canvas(zone, {
-                backgroundColor: '#0a0a0a',
-                scale: 2
-            }).then(canvas => {
-                wm.classList.add('hidden');
-                btnShare.classList.remove('hidden');
+            // Preparar watermark visual para la captura
+            watermark.classList.remove('hidden');
+            shareBtn.classList.add('opacity-0');
+
+            try {
+                const canvas = await html2canvas(document.getElementById('capture-zone'), {
+                    backgroundColor: '#0a0a0a',
+                    scale: 2,
+                    logging: false
+                });
+
+                const dataUrl = canvas.toDataURL('image/png');
                 
-                const img = canvas.toDataURL('image/png');
+                // Descargar captura del expediente
                 const link = document.createElement('a');
-                link.download = `Expediente_${currentUser.username}_DangerMines.png`;
-                link.href = img;
+                link.download = `Expediente-DangerMines-${currentUser.username}.png`;
+                link.href = dataUrl;
                 link.click();
-                showToast("Expediente Descargado");
+                showNotification('Expediente descargado con éxito.');
+            } catch (error) {
+                console.error("Dashboard Capture Error: ", error);
+                showNotification('Fallo al exportar expediente.');
+            } finally {
+                watermark.classList.add('hidden');
+                shareBtn.classList.remove('opacity-0');
+            }
+        }
+
+        // CONTROL DE EVENTOS DOM (LISTENERS PRINCIPALES)
+        document.addEventListener('DOMContentLoaded', () => {
+            setupFirebase();
+
+            // Alternar vista de contraseña en Login
+            document.getElementById('toggle-password').addEventListener('click', () => {
+                const passInput = document.getElementById('auth-password');
+                const eyeIcon = document.getElementById('eye-icon');
+                if (passInput.type === 'password') {
+                    passInput.type = 'text';
+                    eyeIcon.setAttribute('data-lucide', 'eye-off');
+                } else {
+                    passInput.type = 'password';
+                    eyeIcon.setAttribute('data-lucide', 'eye');
+                }
+                lucide.createIcons();
+            });
+
+            // Recordar sesión checkbox
+            document.getElementById('toggle-remember').addEventListener('click', () => {
+                rememberMe = !rememberMe;
+                const box = document.getElementById('remember-box');
+                const check = document.getElementById('remember-check');
+                if (rememberMe) {
+                    box.className = "w-4 h-4 rounded border flex items-center justify-center transition-colors bg-red-600 border-red-500 text-white";
+                    check.classList.remove('hidden');
+                } else {
+                    box.className = "w-4 h-4 rounded border flex items-center justify-center transition-colors bg-neutral-950 border-neutral-800 text-transparent";
+                    check.classList.add('hidden');
+                }
+            });
+
+            // Cambiar modo Login / Registro
+            document.getElementById('auth-switch-btn').addEventListener('click', () => {
+                isLoginMode = !isLoginMode;
+                const titleBtn = document.getElementById('auth-btn-text');
+                const authIcon = document.getElementById('auth-btn-icon');
+                const switchBtn = document.getElementById('auth-switch-btn');
+
+                if (isLoginMode) {
+                    titleBtn.innerText = 'Iniciar Secuencia';
+                    authIcon.setAttribute('data-lucide', 'log-in');
+                    switchBtn.innerText = '¿Nuevo Recluta? Iniciar Enlace';
+                } else {
+                    titleBtn.innerText = 'Registrar Operativo';
+                    authIcon.setAttribute('data-lucide', 'user-plus');
+                    switchBtn.innerText = '¿Ya registrado? Iniciar Secuencia';
+                }
+                lucide.createIcons();
+            });
+
+            // Formulario Autenticación
+            document.getElementById('auth-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const usernameInput = document.getElementById('auth-username').value.trim();
+                const passwordInput = document.getElementById('auth-password').value;
+
+                if (!usernameInput || !passwordInput) return;
+
+                // Buscar usuario en base de datos local / global
+                const matchedUser = users.find(u => u.username.toLowerCase() === usernameInput.toLowerCase());
+
+                if (isLoginMode) {
+                    if (matchedUser) {
+                        if (matchedUser.password === passwordInput) {
+                            loginAgent(matchedUser);
+                        } else {
+                            showNotification('Código de Seguridad Incorrecto.');
+                        }
+                    } else {
+                        showNotification('El Agente no existe.');
+                    }
+                } else {
+                    // Modo Registro
+                    if (matchedUser) {
+                        showNotification('El Identificador ya está ocupado.');
+                    } else {
+                        const newAgent = {
+                            username: usernameInput,
+                            password: passwordInput,
+                            balance: 0,
+                            level: 1,
+                            status: 'online',
+                            last_active: Date.now()
+                        };
+                        await saveUserToDB(newAgent);
+                        loginAgent(newAgent);
+                        showNotification('Agente vinculado a la red.');
+                    }
+                }
+            });
+
+            // Cerrar Sesión
+            document.getElementById('btn-logout').addEventListener('click', async () => {
+                if (currentUser) {
+                    currentUser.status = 'offline';
+                    currentUser.last_active = Date.now();
+                    await saveUserToDB(currentUser);
+                }
+                localStorage.removeItem('dm_remembered_agent');
+                currentUser = null;
+                showAuthScreen();
+            });
+
+            // Mute / Desmute
+            document.getElementById('btn-mute').addEventListener('click', () => {
+                isMuted = !isMuted;
+                const icon = document.getElementById('mute-icon');
+                if (isMuted) {
+                    icon.setAttribute('data-lucide', 'volume-x');
+                    icon.classList.add('text-red-500');
+                } else {
+                    icon.setAttribute('data-lucide', 'volume-2');
+                    icon.classList.remove('text-red-500');
+                }
+                lucide.createIcons();
+            });
+
+            // Copiar enlace de juego alternativo sin usar navigator.clipboard iFrame bug
+            document.getElementById('btn-copy-link').addEventListener('click', () => {
+                const el = document.createElement('textarea');
+                el.value = window.location.href;
+                document.body.appendChild(el);
+                el.select();
+                document.execCommand('copy');
+                document.body.removeChild(el);
+                showNotification('Enlace táctico copiado.');
+            });
+
+            // Botones de juego básicos
+            document.getElementById('btn-start-game').addEventListener('click', () => {
+                startGame();
+            });
+
+            document.getElementById('btn-abort').addEventListener('click', () => {
+                showAbortConfirmation();
+            });
+
+            document.getElementById('btn-confirm-no').addEventListener('click', () => {
+                hideAbortConfirmation();
+            });
+
+            document.getElementById('btn-confirm-yes').addEventListener('click', () => {
+                hideAbortConfirmation();
+                resetGame();
+            });
+
+            document.getElementById('btn-next-try').addEventListener('click', () => {
+                resetGame();
+            });
+
+            // Modos de juego: Dig / Flag
+            document.getElementById('btn-mode-dig').addEventListener('click', () => {
+                currentMode = 'dig';
+                document.getElementById('btn-mode-dig').className = 'flex-1 rounded-xl font-black text-[10px] uppercase tracking-wider flex justify-center items-center gap-1.5 transition-all bg-red-600 text-white shadow-inner py-3 border border-red-500';
+                document.getElementById('btn-mode-flag').className = 'flex-1 rounded-xl font-black text-[10px] uppercase tracking-wider flex justify-center items-center gap-1.5 transition-all bg-neutral-950 text-neutral-500 border border-neutral-800 py-3';
+                sounds.click();
+            });
+
+            document.getElementById('btn-mode-flag').addEventListener('click', () => {
+                currentMode = 'flag';
+                document.getElementById('btn-mode-flag').className = 'flex-1 rounded-xl font-black text-[10px] uppercase tracking-wider flex justify-center items-center gap-1.5 transition-all bg-red-600 text-white shadow-inner py-3 border border-red-500';
+                document.getElementById('btn-mode-dig').className = 'flex-1 rounded-xl font-black text-[10px] uppercase tracking-wider flex justify-center items-center gap-1.5 transition-all bg-neutral-950 text-neutral-500 border border-neutral-800 py-3';
+                sounds.click();
+            });
+
+            // Botón Compartir Captura
+            document.getElementById('btn-share').addEventListener('click', () => {
+                captureDashboard();
+            });
+
+            // Panel de Control Supremo Admin: Editar Telegram ID
+            document.getElementById('btn-edit-tg').addEventListener('click', () => {
+                document.getElementById('view-telegram-id').classList.add('hidden');
+                document.getElementById('form-telegram-id').classList.remove('hidden');
+                document.getElementById('input-tg').value = adminSettings.telegramId || '';
+            });
+
+            document.getElementById('btn-cancel-tg').addEventListener('click', () => {
+                document.getElementById('view-telegram-id').classList.remove('hidden');
+                document.getElementById('form-telegram-id').classList.add('hidden');
+            });
+
+            document.getElementById('btn-save-tg').addEventListener('click', async () => {
+                adminSettings.telegramId = document.getElementById('input-tg').value.trim();
+                await saveSettingsToDB();
+                document.getElementById('view-telegram-id').classList.remove('hidden');
+                document.getElementById('form-telegram-id').classList.add('hidden');
+                showNotification('Telegram ID actualizado.');
+            });
+
+            // Panel de Control Supremo Admin: Editar Pozo Global
+            document.getElementById('btn-edit-pool').addEventListener('click', () => {
+                document.getElementById('btn-edit-pool').classList.add('hidden');
+                document.getElementById('form-edit-pool').classList.remove('hidden');
+                document.getElementById('input-pool').value = adminSettings.globalPool || '1.5T';
+            });
+
+            document.getElementById('btn-cancel-pool').addEventListener('click', () => {
+                document.getElementById('btn-edit-pool').classList.remove('hidden');
+                document.getElementById('form-edit-pool').classList.add('hidden');
+            });
+
+            document.getElementById('btn-save-pool').addEventListener('click', async () => {
+                adminSettings.globalPool = document.getElementById('input-pool').value.trim();
+                await saveSettingsToDB();
+                document.getElementById('btn-edit-pool').classList.remove('hidden');
+                document.getElementById('form-edit-pool').classList.add('hidden');
+                showNotification('Pozo Global actualizado con éxito.');
+            });
+
+            // Modificar Perfil de Usuario Modal - Clics
+            document.getElementById('btn-cancel-edit-user').addEventListener('click', () => {
+                document.getElementById('modal-edit-user').classList.add('hidden');
+            });
+
+            document.getElementById('btn-save-edit-user').addEventListener('click', async () => {
+                const origUser = document.getElementById('edit-orig-user').value;
+                const newUsername = document.getElementById('edit-username').value.trim();
+                const newPass = document.getElementById('edit-password').value;
+                const newLvl = parseInt(document.getElementById('edit-level').value) || 1;
+                const newBal = parseInt(document.getElementById('edit-balance').value) || 0;
+
+                const matchedUser = users.find(u => u.username.toLowerCase() === origUser.toLowerCase());
+                if (matchedUser) {
+                    if (origUser.toLowerCase() !== newUsername.toLowerCase()) {
+                        // Eliminar registro antiguo si cambia el nombre principal
+                        await deleteUserFromDB(origUser);
+                    }
+                    
+                    const updatedObj = {
+                        ...matchedUser,
+                        username: newUsername,
+                        password: newPass,
+                        level: newLvl,
+                        balance: newBal
+                    };
+                    await saveUserToDB(updatedObj);
+                    document.getElementById('modal-edit-user').classList.add('hidden');
+                    showNotification('Operativo guardado con éxito.');
+                }
+            });
+
+            // Eventos de barra de navegación principal
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    sounds.click();
+                    showTab(btn.dataset.tab);
+                });
             });
         });
-
-        // --- PANEL DE Drake Cora (ADMIN) ---
-        const btnEditPool = document.getElementById('btn-edit-pool');
-        const formPool = document.getElementById('form-edit-pool');
-        const inputPool = document.getElementById('input-pool');
-        
-        btnEditPool.addEventListener('click', () => {
-            btnEditPool.classList.add('hidden');
-            formPool.classList.remove('hidden');
-            inputPool.value = adminSettings.globalPool;
-        });
-        document.getElementById('btn-cancel-pool').addEventListener('click', () => {
-            btnEditPool.classList.remove('hidden');
-            formPool.classList.add('hidden');
-        });
-        document.getElementById('btn-save-pool').addEventListener('click', async () => {
-            adminSettings.globalPool = inputPool.value;
-            await saveSettings();
-            btnEditPool.classList.remove('hidden');
-            formPool.classList.add('hidden');
-            showToast("Pozo Global Actualizado");
-        });
-
-        const viewTg = document.getElementById('view-telegram-id');
-        const formTg = document.getElementById('form-telegram-id');
-        const inputTg = document.getElementById('input-tg');
-        
-        document.getElementById('btn-edit-tg').addEventListener('click', () => {
-            viewTg.classList.add('hidden');
-            formTg.classList.remove('hidden');
-            inputTg.value = adminSettings.telegramId;
-        });
-        document.getElementById('btn-cancel-tg').addEventListener('click', () => {
-            viewTg.classList.remove('hidden');
-            formTg.classList.add('hidden');
-        });
-        document.getElementById('btn-save-tg').addEventListener('click', async () => {
-            adminSettings.telegramId = inputTg.value;
-            await saveSettings();
-            viewTg.classList.remove('hidden');
-            formTg.classList.add('hidden');
-            showToast("Destino Telegram Actualizado");
-        });
-
-        const modalEdit = document.getElementById('modal-edit-user');
-        const openEditModal = (username) => {
-            const user = users.find(u => u.username === username);
-            if(!user) return;
-            document.getElementById('edit-orig-user').value = user.username;
-            document.getElementById('edit-username').value = user.username;
-            document.getElementById('edit-password').value = user.password;
-            document.getElementById('edit-level').value = user.level;
-            document.getElementById('edit-balance').value = user.balance;
-            modalEdit.classList.remove('hidden');
-        };
-
-        document.getElementById('btn-cancel-edit-user').addEventListener('click', () => {
-            modalEdit.classList.add('hidden');
-        });
-
-        document.getElementById('btn-save-edit-user').addEventListener('click', async () => {
-            const orig = document.getElementById('edit-orig-user').value;
-            const updatedUser = {
-                username: document.getElementById('edit-username').value,
-                password: document.getElementById('edit-password').value,
-                level: parseInt(document.getElementById('edit-level').value) || 1,
-                balance: parseInt(document.getElementById('edit-balance').value) || 0,
-                joinedAt: users.find(u => u.username === orig).joinedAt,
-                lastActive: users.find(u => u.username === orig).lastActive || Date.now()
-            };
-            
-            if(useFirebase && orig !== updatedUser.username) {
-                try {
-                    await deleteDoc(doc(getPublicRef('danger_mines_profiles'), generateId(orig)));
-                } catch(e) {}
-            }
-            if(!useFirebase && orig !== updatedUser.username) {
-                users = users.filter(u => u.username !== orig);
-            }
-
-            await saveUser(updatedUser);
-            modalEdit.classList.add('hidden');
-            showToast("Perfil de Agente Modificado");
-        });
-
-        // Arranque Inicial
-        setupFirebase();
     </script>
 </body>
 </html>

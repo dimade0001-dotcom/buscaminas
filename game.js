@@ -182,7 +182,16 @@ function setDifficulty(level) {
     const buttons = document.querySelectorAll('.difficulty-btn');
     buttons.forEach(btn => btn.classList.remove('active'));
 
-    event.target.classList.add('active');
+    // Buscar el botón correspondiente al nivel
+    const levelMap = {
+        'easy': 0,
+        'medium': 1,
+        'hard': 2
+    };
+    
+    if (buttons[levelMap[level]]) {
+        buttons[levelMap[level]].classList.add('active');
+    }
 
     const configs = {
         easy: { rows: 8, cols: 8, mines: 10 },
@@ -223,6 +232,7 @@ function startGame() {
 
     game = new Minesweeper(rows, cols, mines);
     updateMinesLeft();
+    updateRevealed();
     renderBoard();
 }
 

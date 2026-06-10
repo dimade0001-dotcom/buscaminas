@@ -3,162 +3,836 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Danger Mines - Global Elite</title>
+    <title>Danger Mines - Operación de Élite</title>
+    
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#dc2626',
+                        dark: '#0a0a0f',
+                        darker: '#050508',
+                        accent: '#ef4444',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
 
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+        
         .pb-safe { padding-bottom: calc(env(safe-area-inset-bottom) + 0.5rem); }
         .scrollbar-hide::-webkit-scrollbar { display: none; }
         .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
         body { -webkit-tap-highlight-color: transparent; }
         input { font-size: 16px !important; }
-        @keyframes tactical-pulse { 0%, 100% { box-shadow: 0 0 10px rgba(220, 38, 38, 0.2); } 50% { box-shadow: 0 0 25px rgba(220, 38, 38, 0.6); } }
-        .tactical-glow { animation: tactical-pulse 2s infinite; }
-        .cell { transition: all 0.15s ease-in-out; }
-        .cell.revealed { background-color: #171717; border-color: #262626; box-shadow: inset 0 0 6px rgba(0,0,0,0.6); }
+        
+        /* Animaciones mejoradas */
+        @keyframes pulse-danger {
+            0%, 100% { box-shadow: 0 0 15px rgba(220, 38, 38, 0.25); }
+            50% { box-shadow: 0 0 35px rgba(220, 38, 38, 0.7); }
+        }
+        .glow-danger { animation: pulse-danger 2.5s infinite ease-in-out; }
+
+        @keyframes pulse-success {
+            0%, 100% { box-shadow: 0 0 15px rgba(16, 185, 129, 0.25); }
+            50% { box-shadow: 0 0 35px rgba(16, 185, 129, 0.7); }
+        }
+        .glow-success { animation: pulse-success 2.5s infinite ease-in-out; }
+
+        @keyframes slide-up {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .animate-slide-up { animation: slide-up 0.4s ease-out forwards; }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-3px); }
+            75% { transform: translateX(3px); }
+        }
+        .animate-shake { animation: shake 0.5s ease-in-out; }
+
+        .cell {
+            aspect-ratio: 1;
+            transition: all 0.15s ease;
+            user-select: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 1.2rem;
+            cursor: pointer;
+        }
+        .cell:active { transform: scale(0.92); }
+        
+        .cell.hidden-cell {
+            background: linear-gradient(145deg, #1f1f25, #121217);
+            border: 1px solid #2d2d35;
+            box-shadow: inset 0 2px 4px rgba(255,255,255,0.05);
+        }
+        .cell.revealed-cell {
+            background: #0d0d12;
+            border: 1px solid #1a1a20;
+            box-shadow: inset 0 2px 8px rgba(0,0,0,0.5);
+        }
+        .cell.mine-hit {
+            background: #dc2626 !important;
+            border-color: #ef4444 !important;
+            animation: pulse-danger 1s infinite ease-in-out;
+        }
+
+        /* Colores de números */
+        .c-1 { color: #3b82f6; } /* Azul */
+        .c-2 { color: #10b981; } /* Verde */
+        .c-3 { color: #ef4444; } /* Rojo */
+        .c-4 { color: #8b5cf6; } /* Morado */
+        .c-5 { color: #f59e0b; } /* Naranja */
+        .c-6 { color: #06b6d4; } /* Cyan */
+        .c-7 { color: #ec4899; } /* Rosa */
+        .c-8 { color: #64748b; } /* Gris */
     </style>
 </head>
-<body class="bg-neutral-950 text-neutral-200 font-sans min-h-screen flex flex-col">
+<body class="bg-gradient-to-b from-darker to-neutral-950 text-neutral-200 font-sans selection:bg-primary/30 overflow-x-hidden min-h-screen flex flex-col">
 
-    <div id="notification-container" class="fixed top-16 left-1/2 transform -translate-x-1/2 z-[100] hidden">
-        <div id="notification-msg" class="bg-white text-black px-5 py-2.5 rounded-full font-black text-[10px] animate-bounce tracking-widest text-center uppercase whitespace-nowrap"></div>
+    <!-- Notificaciones -->
+    <div id="notification" class="fixed top-20 left-1/2 transform -translate-x-1/2 z-[100] hidden">
+        <div class="bg-neutral-900/95 backdrop-blur-sm border border-neutral-700 px-6 py-3 rounded-xl shadow-2xl flex items-center gap-3 min-w-[220px]">
+            <i id="notification-icon" data-lucide="info" class="w-5 h-5"></i>
+            <span id="notification-text" class="font-semibold text-sm"></span>
+        </div>
     </div>
 
-    <div id="loading-screen" class="min-h-screen bg-neutral-950 flex flex-col justify-center items-center text-red-600 gap-4 fixed inset-0 z-50">
-        <i data-lucide="bomb" class="w-16 h-16 animate-pulse"></i>
-        <span class="font-mono text-xs tracking-widest uppercase">Sincronizando con Servidor Global...</span>
+    <!-- Pantalla de Carga -->
+    <div id="loading-screen" class="min-h-screen bg-gradient-to-b from-darker to-neutral-950 flex flex-col justify-center items-center text-primary gap-6 fixed inset-0 z-50">
+        <div class="relative">
+            <i data-lucide="bomb" class="w-20 h-20 animate-pulse drop-shadow-[0_0_30px_rgba(220,38,38,0.6)]"></i>
+            <div class="absolute inset-0 bg-primary/20 blur-3xl rounded-full"></div>
+        </div>
+        <div class="text-center">
+            <span class="font-mono text-sm tracking-[0.4em] uppercase text-neutral-400">Inicializando sistema</span>
+            <div class="flex gap-2 justify-center mt-2">
+                <div class="w-2 h-2 rounded-full bg-primary animate-bounce" style="animation-delay: 0s"></div>
+                <div class="w-2 h-2 rounded-full bg-primary animate-bounce" style="animation-delay: 0.2s"></div>
+                <div class="w-2 h-2 rounded-full bg-primary animate-bounce" style="animation-delay: 0.4s"></div>
+            </div>
+        </div>
     </div>
 
-    <div id="auth-screen" class="min-h-screen bg-neutral-950 flex flex-col items-center justify-center p-4 hidden">
-        <div class="w-full max-w-md bg-neutral-900 border border-neutral-800 rounded-3xl p-8 shadow-2xl relative">
-            <h1 class="text-4xl font-black italic text-center text-white mb-8">DANGER <span class="text-red-600">MINES</span></h1>
-            <form id="auth-form" class="space-y-4">
-                <input type="text" id="auth-username" class="w-full bg-neutral-950 border border-neutral-800 rounded-xl py-3 px-4 text-white font-bold" placeholder="Tu Nombre de Agente" required />
-                <input type="password" id="auth-password" class="w-full bg-neutral-950 border border-neutral-800 rounded-xl py-3 px-4 text-white font-bold" placeholder="Código de Seguridad" required />
-                <button type="submit" class="w-full bg-red-600 py-4 rounded-xl font-black text-white hover:bg-red-500 transition-all">ACCEDER A LA RED GLOBAL</button>
+    <!-- Pantalla de Autenticación -->
+    <div id="auth-screen" class="min-h-screen bg-gradient-to-b from-darker to-neutral-950 flex flex-col items-center justify-center p-6 hidden w-full">
+        <div class="w-full max-w-md bg-neutral-900/70 backdrop-blur-sm border border-neutral-800 rounded-3xl p-8 shadow-[0_0_80px_rgba(220,38,38,0.18)] relative overflow-hidden">
+            <div class="absolute -top-32 -right-32 w-64 h-64 bg-primary/20 rounded-full blur-[140px] pointer-events-none"></div>
+            <div class="absolute -bottom-32 -left-32 w-64 h-64 bg-primary/10 rounded-full blur-[140px] pointer-events-none"></div>
+            
+            <div class="text-center mb-10 relative z-10">
+                <div class="inline-block p-5 bg-neutral-950/80 rounded-2xl border border-neutral-700 shadow-inner mb-6 relative">
+                    <div class="absolute inset-0 border border-primary/40 rounded-2xl animate-ping opacity-30"></div>
+                    <i data-lucide="shield-alert" class="w-14 h-14 text-primary drop-shadow-[0_0_20px_rgba(220,38,38,0.5)]"></i>
+                </div>
+                <h1 class="text-5xl font-black italic tracking-wider uppercase text-transparent bg-clip-text bg-gradient-to-r from-primary via-accent to-white">
+                    Danger <span class="text-primary">Mines</span>
+                </h1>
+                <p class="text-neutral-500 text-xs mt-3 uppercase tracking-[0.3em] font-bold">Operación de Élite</p>
+            </div>
+
+            <form id="auth-form" class="space-y-5 relative z-10">
+                <div class="space-y-2">
+                   <label class="text-xs font-bold uppercase text-neutral-400 tracking-wider">Identificador</label>
+                   <input type="text" id="auth-username" class="w-full bg-neutral-950/60 border border-neutral-700 rounded-xl py-4 px-4 text-white font-medium outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all placeholder:text-neutral-600" placeholder="Tu nombre de agente" required />
+                </div>
+                <div class="space-y-2 relative">
+                   <label class="text-xs font-bold uppercase text-neutral-400 tracking-wider">Código de acceso</label>
+                   <div class="relative">
+                     <input type="password" id="auth-password" class="w-full bg-neutral-950/60 border border-neutral-700 rounded-xl py-4 px-4 text-white font-medium outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all placeholder:text-neutral-600 pr-12" placeholder="••••••••" required />
+                     <button type="button" id="toggle-password" class="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-white transition-colors">
+                       <i data-lucide="eye" class="w-5 h-5"></i>
+                     </button>
+                   </div>
+                </div>
+
+                <button type="submit" id="auth-submit-btn" class="w-full bg-gradient-to-r from-primary to-accent hover:from-accent hover:to-primary text-white font-bold uppercase tracking-wider py-4 rounded-xl shadow-lg shadow-primary/20 transition-all flex justify-center items-center gap-3 mt-6 text-base active:scale-[0.98]">
+                  <i data-lucide="log-in" class="w-5 h-5"></i> <span>Iniciar Operación</span>
+                </button>
             </form>
         </div>
     </div>
 
-    <div id="app-screen" class="hidden flex-col min-h-screen w-full">
-        <header class="bg-neutral-950 border-b border-neutral-900 p-4 flex justify-between items-center">
-            <div>
-                <h1 class="font-black text-white italic">DANGER <span class="text-red-600">MINES</span></h1>
-                <span class="text-[10px] text-neutral-500 font-bold uppercase">Agente: <span id="header-username">---</span></span>
+    <!-- Pantalla Principal -->
+    <div id="app-screen" class="hidden flex-col min-h-screen pb-24 w-full">
+        <!-- Header -->
+        <header class="sticky top-0 z-40 bg-neutral-950/90 backdrop-blur-md border-b border-neutral-800 px-5 py-4 shadow-lg flex justify-between items-center w-full">
+            <div class="flex items-center gap-3">
+              <button id="btn-logout" class="text-neutral-500 hover:text-primary transition-colors p-2 rounded-lg hover:bg-neutral-800" title="Cerrar Sesión">
+                <i data-lucide="power" class="w-5 h-5"></i>
+              </button>
+              <div>
+                <h1 class="text-lg font-black italic tracking-wider uppercase text-white leading-none">Danger <span class="text-primary">Mines</span></h1>
+                <span class="text-xs text-neutral-400">Agente: <span id="header-username" class="text-primary font-medium">---</span></span>
+              </div>
             </div>
-            <div class="text-yellow-500 font-black text-sm" id="header-balance">0 PTS</div>
+            <div class="flex items-center gap-3">
+              <div class="bg-neutral-900 px-3 py-2 rounded-lg border border-neutral-700 shadow-sm">
+                <span id="header-balance" class="font-bold text-yellow-400">0 PTS</span>
+              </div>
+              <button id="btn-mute" class="p-2 rounded-lg bg-neutral-900 border border-neutral-700 text-neutral-400 hover:text-white hover:bg-neutral-800 transition-colors">
+                <i data-lucide="volume-2" id="mute-icon" class="w-4 h-4"></i>
+              </button>
+            </div>
         </header>
-        
-        <main class="flex-1 p-4 flex flex-col items-center">
-            <div id="tab-game" class="w-full max-w-lg">
-                <div id="mines-grid" class="grid gap-1 bg-neutral-900 p-2 rounded-xl"></div>
-                <button id="btn-start-game" class="mt-4 w-full bg-red-600 py-3 rounded-xl font-black">INICIAR OPERACIÓN</button>
+
+        <main class="flex-1 p-5 flex flex-col items-center w-full">
+            <!-- Tabs -->
+            <div class="flex w-full max-w-md bg-neutral-900/80 rounded-xl p-1.5 mb-6 border border-neutral-800 shadow-inner">
+                <button class="tab-btn flex-1 py-3 rounded-lg font-bold text-sm uppercase tracking-wider transition-all bg-gradient-to-r from-primary to-accent text-white shadow-md" data-tab="game">Juego</button>
+                <button class="tab-btn flex-1 py-3 rounded-lg font-bold text-sm uppercase tracking-wider transition-all text-neutral-400 hover:text-white hover:bg-neutral-800/50" data-tab="history">Historial</button>
+                <button class="tab-btn flex-1 py-3 rounded-lg font-bold text-sm uppercase tracking-wider transition-all text-neutral-400 hover:text-white hover:bg-neutral-800/50" data-tab="ranking">Ranking</button>
             </div>
-            <div id="tab-ranking" class="hidden w-full max-w-lg">
-                <div id="ranking-container" class="space-y-2"></div>
+
+            <!-- Pestaña Juego -->
+            <div id="tab-game" class="tab-content flex-1 flex flex-col w-full max-w-2xl">
+                <div class="bg-neutral-900/60 backdrop-blur-sm border border-neutral-800 rounded-2xl p-5 mb-5 shadow-xl relative overflow-hidden">
+                  <div class="absolute right-0 top-0 w-40 h-40 bg-primary/5 rounded-full blur-3xl -mr-12 -mt-12 pointer-events-none"></div>
+                  
+                  <div class="flex justify-between items-center mb-5 relative z-10">
+                    <div class="flex items-center gap-2 font-bold text-lg text-primary">
+                      <i data-lucide="shield-alert" class="w-5 h-5"></i>
+                      <span id="game-level">Nivel 1</span>
+                    </div>
+                    <div class="flex bg-neutral-950/80 border border-neutral-700 rounded-lg overflow-hidden shadow-sm">
+                       <div class="flex items-center gap-2 px-4 py-2 bg-neutral-900/70 border-r border-neutral-700 text-primary" title="Minas restantes">
+                          <i data-lucide="bomb" class="w-4 h-4"></i> <span id="mines-count">3</span>
+                       </div>
+                       <div class="flex items-center gap-2 px-4 py-2 text-neutral-300" title="Recompensa actual">
+                          <i data-lucide="star" class="w-4 h-4 text-yellow-500"></i> <span id="current-points">+0</span>
+                       </div>
+                    </div>
+                  </div>
+    
+                  <div id="game-controls-idle" class="relative z-10">
+                      <button id="btn-start-game" class="w-full bg-gradient-to-r from-primary to-accent hover:from-accent hover:to-primary text-white font-bold uppercase tracking-wider py-4 rounded-xl shadow-lg shadow-primary/20 transition-all flex justify-center items-center gap-3 text-base active:scale-[0.98]">
+                        <i data-lucide="play" class="w-5 h-5"></i> Iniciar Misión
+                      </button>
+                  </div>
+
+                  <div id="game-controls-playing" class="hidden gap-3 relative z-10">
+                    <button id="btn-abort" class="w-1/3 bg-neutral-950/80 text-primary border border-primary/30 py-3 rounded-xl font-bold uppercase hover:bg-primary/10 transition-all active:scale-[0.98]">
+                      Abortar
+                    </button>
+                    <div class="w-2/3 flex gap-2">
+                      <button id="btn-mode-dig" class="flex-1 rounded-xl font-bold uppercase flex justify-center items-center gap-2 transition-all bg-gradient-to-r from-primary to-accent text-white shadow-md py-3">
+                        <i data-lucide="target" class="w-4 h-4"></i> Cavar
+                      </button>
+                      <button id="btn-mode-flag" class="flex-1 rounded-xl font-bold uppercase flex justify-center items-center gap-2 transition-all bg-neutral-950/80 text-neutral-400 border border-neutral-700 py-3">
+                        <i data-lucide="flag" class="w-4 h-4"></i> Marcar
+                      </button>
+                    </div>
+                  </div>
+                </div>
+    
+                <div id="capture-zone" class="relative p-3 rounded-2xl bg-neutral-950/80 border border-neutral-800 shadow-2xl flex-1 flex flex-col min-h-[420px] overflow-hidden">
+                  <div class="absolute inset-0 bg-[linear-gradient(to_right,#80808008_1px,transparent_1px),linear-gradient(to_bottom,#80808008_1px,transparent_1px)] bg-[size:16px_16px] pointer-events-none"></div>
+    
+                  <!-- Resultado Overlay -->
+                  <div id="result-overlay" class="hidden absolute inset-0 z-30 flex flex-col items-center justify-center bg-neutral-950/95 backdrop-blur-sm rounded-2xl p-6 text-center">
+                    <div class="animate-slide-up">
+                      <div id="result-icon-container" class="w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-5 shadow-lg">
+                         <i id="result-icon" data-lucide="check-circle" class="w-12 h-12"></i>
+                      </div>
+                      <h2 id="result-title" class="text-3xl font-black uppercase mb-2">Misión Cumplida</h2>
+                      <p id="result-points" class="font-bold text-2xl mb-3 text-yellow-400">+150 PTS</p>
+                      <p id="result-detail" class="text-neutral-400 mb-6">Has despejado todas las minas</p>
+                      <button id="btn-next-level" class="bg-gradient-to-r from-primary to-accent text-white font-bold uppercase tracking-wider py-3 px-8 rounded-xl shadow-lg shadow-primary/20 transition-all flex items-center gap-2 mx-auto active:scale-95">
+                        <i id="btn-next-icon" data-lucide="arrow-right" class="w-4 h-4"></i> <span id="btn-next-text">Siguiente Nivel</span>
+                      </button>
+                    </div>
+                  </div>
+    
+                  <!-- Tablero -->
+                  <div class="flex-1 w-full h-full p-2 relative z-20 overflow-auto scrollbar-hide flex items-center justify-center">
+                    <!-- Contenedor del Grid (Se inyecta via JS) -->
+                    <div id="mines-grid" class="hidden gap-[4px] bg-neutral-900/70 p-2 rounded-xl border border-neutral-700 shadow-inner w-full max-w-sm aspect-square">
+                        <!-- Generado por JS -->
+                    </div>
+                    <!-- Standby State -->
+                    <div id="mines-standby" class="text-neutral-600/50 text-center flex flex-col items-center gap-4">
+                        <i data-lucide="shield-alert" class="w-16 h-16 mx-auto text-neutral-800"></i>
+                        <p class="text-base font-medium">Listo para iniciar</p>
+                        <p class="text-sm text-neutral-500 max-w-xs">Presiona "Iniciar Misión" para desplegar el campo de minas</p>
+                     </div>
+                  </div>
+                </div>
+            </div>
+
+            <!-- Historial -->
+            <div id="tab-history" class="tab-content hidden space-y-5 w-full max-w-md mx-auto">
+                <h2 class="text-xl font-bold flex items-center gap-3 uppercase tracking-wider border-l-4 border-primary pl-4 text-white">
+                  <i data-lucide="history" class="w-5 h-5 text-primary"></i> Registro de Operaciones
+                </h2>
+                <div id="history-container" class="space-y-3">
+                    <!-- Insertado por JS -->
+                    <div class="text-center text-neutral-500 py-10">No hay operaciones recientes.</div>
+                </div>
+            </div>
+
+            <!-- Ranking -->
+            <div id="tab-ranking" class="tab-content hidden space-y-5 w-full max-w-md mx-auto pb-6">
+                <div class="bg-gradient-to-b from-red-950/40 to-neutral-950 border border-primary/20 rounded-2xl p-6 shadow-xl flex flex-col items-center text-center relative overflow-hidden">
+                  <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-primary/10 via-transparent to-transparent pointer-events-none"></div>
+                  <i data-lucide="trophy" class="w-16 h-16 text-yellow-500 mb-3 drop-shadow-[0_0_25px_rgba(234,179,8,0.4)]"></i>
+                  <p class="text-sm font-bold text-primary uppercase tracking-wider">Pozo de Premios</p>
+                  <h2 class="text-4xl font-black text-white mb-2">1.250.000 PTS</h2>
+                  <p class="text-neutral-400 text-sm">Torneo Semanal - Faltan 2 días</p>
+                </div>
+
+                <div class="bg-neutral-900/60 border border-neutral-800 rounded-xl p-4 shadow-sm">
+                    <div class="flex items-center justify-between border-b border-neutral-800 pb-3 mb-3">
+                        <span class="text-neutral-400 font-bold uppercase text-xs tracking-wider">Agente</span>
+                        <span class="text-neutral-400 font-bold uppercase text-xs tracking-wider">Puntuación</span>
+                    </div>
+                    <!-- Ranking Ficticio -->
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <span class="font-black text-yellow-500 w-4">1</span>
+                                <span class="font-medium text-white">Ghost_Sniper</span>
+                            </div>
+                            <span class="font-bold text-primary">145,200</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <span class="font-black text-neutral-300 w-4">2</span>
+                                <span class="font-medium text-white">Alpha_Wolf</span>
+                            </div>
+                            <span class="font-bold text-primary">120,500</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <span class="font-black text-amber-600 w-4">3</span>
+                                <span class="font-medium text-white">Bravo_Six</span>
+                            </div>
+                            <span class="font-bold text-primary">98,300</span>
+                        </div>
+                    </div>
+                </div>
             </div>
         </main>
-
-        <nav class="fixed bottom-0 w-full bg-neutral-950 border-t border-neutral-900 flex justify-around p-4">
-            <button data-tab="game" class="nav-btn text-red-500"><i data-lucide="target"></i></button>
-            <button data-tab="ranking" class="nav-btn text-neutral-600"><i data-lucide="crown"></i></button>
-        </nav>
     </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    <!-- Scripts de Lógica del Juego -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Inicializar iconos de Lucide
+            lucide.createIcons();
 
-        // Firebase Setup
-        const firebaseConfig = {
-            apiKey: "AIzaSyArsLcBp2WUKk7WiAYh2I7tTvdAzcs1My0",
-            authDomain: "danger-mines.firebaseapp.com",
-            projectId: "danger-mines",
-            storageBucket: "danger-mines.firebasestorage.app",
-            messagingSenderId: "722493966122",
-            appId: "1:722493966122:web:283963d471c46300cd8053"
+            // ---- ESTADO GLOBAL DEL JUEGO ----
+            const gameState = {
+                username: '',
+                totalPoints: 0,
+                level: 1,
+                gridSize: 5, // 5x5 inicial
+                totalMines: 3,
+                minesLeft: 3,
+                currentReward: 0,
+                mode: 'dig', // 'dig' o 'flag'
+                isPlaying: false,
+                board: [],
+                history: []
+            };
+
+        // ---- ELEMENTOS DEL DOM ----
+        const screens = {
+            loading: document.getElementById('loading-screen'),
+            auth: document.getElementById('auth-screen'),
+            app: document.getElementById('app-screen')
         };
+        const authForm = document.getElementById('auth-form');
+        const authUsername = document.getElementById('auth-username');
+        const headerUsername = document.getElementById('header-username');
+        const headerBalance = document.getElementById('header-balance');
+        
+        // Controles de juego
+        const btnStart = document.getElementById('btn-start-game');
+        const btnAbort = document.getElementById('btn-abort');
+        const controlsIdle = document.getElementById('game-controls-idle');
+        const controlsPlaying = document.getElementById('game-controls-playing');
+        const btnModeDig = document.getElementById('btn-mode-dig');
+        const btnModeFlag = document.getElementById('btn-mode-flag');
+        
+        // Tablero y HUD
+        const minesGrid = document.getElementById('mines-grid');
+        const minesStandby = document.getElementById('mines-standby');
+        const gameLevelText = document.getElementById('game-level');
+        const minesCountText = document.getElementById('mines-count');
+        const currentPointsText = document.getElementById('current-points');
+        
+        // Overlay de Resultado
+        const resultOverlay = document.getElementById('result-overlay');
+        const resultIconContainer = document.getElementById('result-icon-container');
+        const resultIcon = document.getElementById('result-icon');
+        const resultTitle = document.getElementById('result-title');
+        const resultPoints = document.getElementById('result-points');
+        const resultDetail = document.getElementById('result-detail');
+        const btnNextLevel = document.getElementById('btn-next-level');
+        const btnNextText = document.getElementById('btn-next-text');
+        const btnNextIcon = document.getElementById('btn-next-icon');
 
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        const appId = 'danger-mines-global-elite';
+        // ---- INICIALIZACIÓN Y FLUJO DE PANTALLAS ----
+        window.addEventListener('load', () => {
+            // Simular tiempo de carga
+            setTimeout(() => {
+                screens.loading?.classList.add('hidden');
+                screens.auth?.classList.remove('hidden');
+                screens.auth?.classList.add('flex');
+            }, 2000);
+        });
 
-        // Globals
-        let currentUser = null;
-        let users = [];
-
-        // UI Helpers
-        lucide.createIcons();
-        const getPublicRef = (col) => collection(db, 'artifacts', appId, 'public', 'data', col);
-
-        const setupListeners = async () => {
-            await signInAnonymously(auth);
-            
-            // Listen to users globally
-            onSnapshot(getPublicRef('users'), (snap) => {
-                users = [];
-                snap.forEach(d => users.push(d.data()));
-                renderRanking();
-            });
-        };
-
-        const renderRanking = () => {
-            const container = document.getElementById('ranking-container');
-            container.innerHTML = users.sort((a,b) => b.balance - a.balance).map((u, i) => `
-                <div class="flex justify-between p-3 bg-neutral-900 rounded-lg">
-                    <span>#${i+1} ${u.username}</span>
-                    <span class="text-yellow-500 font-bold">${u.balance} PTS</span>
-                </div>
-            `).join('');
-        };
-
-        // Authentication
-        document.getElementById('auth-form').onsubmit = async (e) => {
+        authForm?.addEventListener('submit', (e) => {
             e.preventDefault();
-            const username = document.getElementById('auth-username').value;
-            currentUser = { username, balance: 0, level: 1, lastActive: Date.now() };
-            
-            await setDoc(doc(getPublicRef('users'), username.toLowerCase()), currentUser);
-            
-            document.getElementById('auth-screen').classList.add('hidden');
-            document.getElementById('app-screen').classList.remove('hidden');
-            document.getElementById('header-username').innerText = username;
-        };
-
-        // Navigation
-        document.querySelectorAll('.nav-btn').forEach(b => {
-            b.onclick = () => {
-                document.getElementById('tab-game').classList.toggle('hidden', b.dataset.tab !== 'game');
-                document.getElementById('tab-ranking').classList.toggle('hidden', b.dataset.tab !== 'ranking');
-            };
+            const username = authUsername.value.trim();
+            if (username) {
+                gameState.username = username;
+                headerUsername.textContent = username;
+                
+                screens.auth.classList.add('hidden');
+                screens.auth.classList.remove('flex');
+                screens.app.classList.remove('hidden');
+                screens.app.classList.add('flex');
+                
+                showNotification(`Bienvenido Agente ${username}`, 'shield-check');
+            }
         });
 
-        // Game Init
-        setupListeners().then(() => {
-            document.getElementById('loading-screen').classList.add('hidden');
-            document.getElementById('auth-screen').classList.remove('hidden');
+        // Alternar contraseña (visual)
+        document.getElementById('toggle-password')?.addEventListener('click', function() {
+            const pwdInput = document.getElementById('auth-password');
+            const icon = this.querySelector('i');
+            if (pwdInput.type === 'password') {
+                pwdInput.type = 'text';
+                icon.setAttribute('data-lucide', 'eye-off');
+            } else {
+                pwdInput.type = 'password';
+                icon.setAttribute('data-lucide', 'eye');
+            }
+            lucide.createIcons();
         });
 
-        // Simple Mine Grid Init
-        const grid = document.getElementById('mines-grid');
-        grid.style.gridTemplateColumns = 'repeat(10, minmax(0, 1fr))';
-        for(let i=0; i<100; i++) {
-            const cell = document.createElement('div');
-            cell.className = "cell w-8 h-8 bg-neutral-800 rounded";
-            cell.onclick = () => {
-                cell.classList.add('revealed');
-                if(currentUser) {
-                    currentUser.balance += 10;
-                    setDoc(doc(getPublicRef('users'), currentUser.username.toLowerCase()), currentUser);
-                    document.getElementById('header-balance').innerText = `${currentUser.balance} PTS`;
-                }
-            };
-            grid.appendChild(cell);
+        // Cerrar sesión
+        document.getElementById('btn-logout')?.addEventListener('click', () => {
+            screens.app.classList.add('hidden');
+            screens.app.classList.remove('flex');
+            screens.auth.classList.remove('hidden');
+            screens.auth.classList.add('flex');
+            authForm.reset();
+        });
+
+        // ---- SISTEMA DE PESTAÑAS ----
+        const tabBtns = document.querySelectorAll('.tab-btn');
+        const tabContents = document.querySelectorAll('.tab-content');
+
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const targetId = `tab-${btn.getAttribute('data-tab')}`;
+                
+                // Actualizar estilos de botones
+                tabBtns.forEach(b => {
+                    b.classList.remove('bg-gradient-to-r', 'from-primary', 'to-accent', 'text-white', 'shadow-md');
+                    b.classList.add('text-neutral-400');
+                });
+                btn.classList.add('bg-gradient-to-r', 'from-primary', 'to-accent', 'text-white', 'shadow-md');
+                btn.classList.remove('text-neutral-400');
+
+                // Mostrar contenido correspondiente
+                tabContents.forEach(content => {
+                    if (content.id === targetId) {
+                        content.classList.remove('hidden');
+                        content.classList.add('flex');
+                    } else {
+                        content.classList.add('hidden');
+                        content.classList.remove('flex');
+                    }
+                });
+            });
+        });
+
+        // ---- LÓGICA DEL JUEGO (MOTOR DE BUSCAMINAS) ----
+
+        function startMission() {
+            gameState.isPlaying = true;
+            gameState.mode = 'dig';
+            
+            // Dificultad por nivel
+            gameState.gridSize = Math.min(5 + Math.floor(gameState.level / 3), 8); // Crece hasta 8x8
+            gameState.totalMines = 2 + gameState.level; 
+            gameState.minesLeft = gameState.totalMines;
+            gameState.currentReward = 0;
+            
+            updateHUD();
+            
+            // Cambiar UI de controles
+            controlsIdle.classList.add('hidden');
+            controlsPlaying.classList.remove('hidden');
+            controlsPlaying.classList.add('flex');
+            updateModeButtons();
+            
+            // Limpiar y preparar tablero
+            minesStandby.classList.add('hidden');
+            minesGrid.classList.remove('hidden');
+            minesGrid.classList.add('grid');
+            
+            resultOverlay.classList.add('hidden');
+            
+            generateBoard();
+            renderBoard();
         }
+
+        function generateBoard() {
+            const size = gameState.gridSize;
+            gameState.board = Array(size).fill(null).map(() => Array(size).fill(null).map(() => ({
+                isMine: false,
+                isRevealed: false,
+                isFlagged: false,
+                neighborMines: 0
+            })));
+
+            // Colocar minas aleatoriamente
+            let minesPlaced = 0;
+            while (minesPlaced < gameState.totalMines) {
+                const x = Math.floor(Math.random() * size);
+                const y = Math.floor(Math.random() * size);
+                if (!gameState.board[y][x].isMine) {
+                    gameState.board[y][x].isMine = true;
+                    minesPlaced++;
+                }
+            }
+
+            // Calcular números de adyacencia
+            for (let y = 0; y < size; y++) {
+                for (let x = 0; x < size; x++) {
+                    if (!gameState.board[y][x].isMine) {
+                        let count = 0;
+                        for (let dy = -1; dy <= 1; dy++) {
+                            for (let dx = -1; dx <= 1; dx++) {
+                                const ny = y + dy;
+                                const nx = x + dx;
+                                if (ny >= 0 && ny < size && nx >= 0 && nx < size) {
+                                    if (gameState.board[ny][nx].isMine) count++;
+                                }
+                            }
+                        }
+                        gameState.board[y][x].neighborMines = count;
+                    }
+                }
+            }
+        }
+
+        function renderBoard() {
+            minesGrid.innerHTML = '';
+            const size = gameState.gridSize;
+            
+            // Configurar grid-template-columns dinámicamente
+            minesGrid.style.gridTemplateColumns = `repeat(${size}, minmax(0, 1fr))`;
+
+            for (let y = 0; y < size; y++) {
+                for (let x = 0; x < size; x++) {
+                    const cellData = gameState.board[y][x];
+                    const cellElement = document.createElement('div');
+                    cellElement.classList.add('cell', 'rounded-lg');
+                    cellElement.dataset.x = x;
+                    cellElement.dataset.y = y;
+
+                    if (cellData.isRevealed) {
+                        cellElement.classList.add('revealed-cell');
+                        if (cellData.isMine) {
+                            cellElement.classList.add('mine-hit');
+                            cellElement.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white"><circle cx="11" cy="13" r="9"/><path d="M14.3 8.7l3.4-3.4"/><path d="M16 6a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/></svg>`;
+                        } else if (cellData.neighborMines > 0) {
+                            cellElement.textContent = cellData.neighborMines;
+                            cellElement.classList.add(`c-${cellData.neighborMines}`);
+                        }
+                    } else {
+                        cellElement.classList.add('hidden-cell');
+                        if (cellData.isFlagged) {
+                            cellElement.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-yellow-500"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" x2="4" y1="22" y2="15"/></svg>`;
+                        }
+                    }
+
+                    cellElement.addEventListener('click', () => handleCellClick(x, y));
+                    minesGrid.appendChild(cellElement);
+                }
+            }
+        }
+
+        function handleCellClick(x, y) {
+            if (!gameState.isPlaying) return;
+            const cellData = gameState.board[y][x];
+            
+            if (cellData.isRevealed) return;
+
+            if (gameState.mode === 'flag') {
+                cellData.isFlagged = !cellData.isFlagged;
+                gameState.minesLeft += cellData.isFlagged ? -1 : 1;
+                updateHUD();
+                renderBoard();
+                checkWin();
+                return;
+            }
+
+            // Modo Dig
+            if (cellData.isFlagged) return; // No cavar si hay bandera
+
+            if (cellData.isMine) {
+                gameOver(false, x, y);
+            } else {
+                revealCell(x, y);
+                
+                // Sumar puntos por descubrir
+                const puntosGanados = gameState.level * 10;
+                gameState.currentReward += puntosGanados;
+                
+                updateHUD();
+                renderBoard();
+                checkWin();
+            }
+        }
+
+        function revealCell(x, y) {
+            const size = gameState.gridSize;
+            if (x < 0 || x >= size || y < 0 || y >= size) return;
+            
+            const cell = gameState.board[y][x];
+            if (cell.isRevealed || cell.isFlagged) return;
+
+            cell.isRevealed = true;
+
+            // Expansión (Flood Fill) si no hay minas adyacentes
+            if (cell.neighborMines === 0) {
+                for (let dy = -1; dy <= 1; dy++) {
+                    for (let dx = -1; dx <= 1; dx++) {
+                        if (dx !== 0 || dy !== 0) {
+                            revealCell(x + dx, y + dy);
+                        }
+                    }
+                }
+            }
+        }
+
+        function checkWin() {
+            let safeCellsRemaining = 0;
+            const size = gameState.gridSize;
+
+            for (let y = 0; y < size; y++) {
+                for (let x = 0; x < size; x++) {
+                    const cell = gameState.board[y][x];
+                    if (!cell.isMine && !cell.isRevealed) {
+                        safeCellsRemaining++;
+                    }
+                }
+            }
+
+            if (safeCellsRemaining === 0) {
+                gameOver(true);
+            }
+        }
+
+        function gameOver(isWin, deathX = -1, deathY = -1) {
+            gameState.isPlaying = false;
+            
+            // Revelar todas las minas
+            const size = gameState.gridSize;
+            for (let y = 0; y < size; y++) {
+                for (let x = 0; x < size; x++) {
+                    if (gameState.board[y][x].isMine) {
+                        gameState.board[y][x].isRevealed = true;
+                    }
+                }
+            }
+            renderBoard();
+
+            // Configurar Overlay
+            resultOverlay.classList.remove('hidden');
+            resultOverlay.classList.add('flex');
+            
+            // Remover clases previas del contenedor del icono
+            resultIconContainer.className = 'w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-5 shadow-lg';
+
+            if (isWin) {
+                const bonus = gameState.level * 50;
+                const totalRecompensa = gameState.currentReward + bonus;
+                gameState.totalPoints += totalRecompensa;
+                
+                resultIcon.setAttribute('data-lucide', 'check-circle');
+                resultIconContainer.classList.add('bg-emerald-500/20', 'text-emerald-500');
+                resultTitle.textContent = 'Misión Cumplida';
+                resultTitle.className = 'text-3xl font-black uppercase mb-2 text-emerald-500';
+                resultPoints.textContent = `+${totalRecompensa} PTS`;
+                resultPoints.className = 'font-bold text-2xl mb-3 text-yellow-400';
+                resultDetail.textContent = 'Campo de minas asegurado exitosamente.';
+                
+                btnNextText.textContent = 'Siguiente Nivel';
+                btnNextIcon.setAttribute('data-lucide', 'arrow-right');
+                
+                addToHistory(true, totalRecompensa);
+                
+                // Preparar para siguiente nivel
+                gameState.level++;
+                
+            } else {
+                // Efecto de sacudida
+                document.getElementById('capture-zone').classList.add('animate-shake');
+                setTimeout(() => document.getElementById('capture-zone').classList.remove('animate-shake'), 500);
+
+                resultIcon.setAttribute('data-lucide', 'skull');
+                resultIconContainer.classList.add('bg-red-500/20', 'text-red-500');
+                resultTitle.textContent = 'Operador Caído';
+                resultTitle.className = 'text-3xl font-black uppercase mb-2 text-red-500';
+                resultPoints.textContent = '0 PTS';
+                resultPoints.className = 'font-bold text-2xl mb-3 text-neutral-500';
+                resultDetail.textContent = 'Has activado un explosivo. Misión fracasada.';
+                
+                btnNextText.textContent = 'Reintentar Nivel';
+                btnNextIcon.setAttribute('data-lucide', 'rotate-ccw');
+                
+                addToHistory(false, 0);
+            }
+            
+            lucide.createIcons();
+            
+            // Restablecer controles
+            controlsPlaying.classList.add('hidden');
+            controlsPlaying.classList.remove('flex');
+            controlsIdle.classList.remove('hidden');
+            
+            updateHUD();
+        }
+
+        function abortMission() {
+            if(!confirm('¿Estás seguro de abortar? Perderás el progreso de este nivel.')) return;
+            gameOver(false); // Tratado como derrota
+        }
+
+        // ---- UTILIDADES Y UI ----
+
+        function updateHUD() {
+            gameLevelText.textContent = `Nivel ${gameState.level}`;
+            minesCountText.textContent = gameState.minesLeft;
+            currentPointsText.textContent = `+${gameState.currentReward}`;
+            headerBalance.textContent = `${gameState.totalPoints} PTS`;
+        }
+
+        function updateModeButtons() {
+            if (gameState.mode === 'dig') {
+                btnModeDig.className = 'flex-1 rounded-xl font-bold uppercase flex justify-center items-center gap-2 transition-all bg-gradient-to-r from-primary to-accent text-white shadow-md py-3';
+                btnModeFlag.className = 'flex-1 rounded-xl font-bold uppercase flex justify-center items-center gap-2 transition-all bg-neutral-950/80 text-neutral-400 border border-neutral-700 py-3 hover:text-white';
+            } else {
+                btnModeFlag.className = 'flex-1 rounded-xl font-bold uppercase flex justify-center items-center gap-2 transition-all bg-neutral-800 text-yellow-500 border border-yellow-500/50 shadow-[0_0_15px_rgba(234,179,8,0.2)] py-3';
+                btnModeDig.className = 'flex-1 rounded-xl font-bold uppercase flex justify-center items-center gap-2 transition-all bg-neutral-950/80 text-neutral-400 border border-neutral-700 py-3 hover:text-white';
+            }
+        }
+
+        function addToHistory(isWin, points) {
+            const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            gameState.history.unshift({
+                level: gameState.level,
+                isWin: isWin,
+                points: points,
+                time: time
+            });
+            
+            renderHistory();
+        }
+
+        function renderHistory() {
+            const container = document.getElementById('history-container');
+            if (gameState.history.length === 0) return;
+            
+            container.innerHTML = '';
+            gameState.history.forEach(entry => {
+                const div = document.createElement('div');
+                div.className = 'bg-neutral-900/60 border border-neutral-800 rounded-xl p-4 shadow-sm hover:bg-neutral-900/80 transition-colors animate-slide-up';
+                
+                const statusColor = entry.isWin ? 'text-emerald-500' : 'text-red-500';
+                const statusText = entry.isWin ? 'Completado' : 'Mina activada';
+                const ptsText = entry.isWin ? `+${entry.points} PTS` : '0 PTS';
+
+                div.innerHTML = `
+                    <div class="flex justify-between items-center">
+                        <span class="font-medium">Nivel ${entry.level}</span>
+                        <span class="font-bold ${statusColor}">${ptsText}</span>
+                    </div>
+                    <p class="text-sm text-neutral-400 mt-1">${entry.time} • ${statusText}</p>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function showNotification(text, iconName = 'info') {
+            const notif = document.getElementById('notification');
+            document.getElementById('notification-text').textContent = text;
+            document.getElementById('notification-icon').setAttribute('data-lucide', iconName);
+            lucide.createIcons();
+            
+            notif.classList.remove('hidden');
+            
+            setTimeout(() => {
+                notif.classList.add('hidden');
+            }, 3000);
+        }
+
+        // ---- LISTENERS DE BOTONES DEL JUEGO ----
+        btnStart?.addEventListener('click', startMission);
+        btnNextLevel?.addEventListener('click', startMission);
+        btnAbort?.addEventListener('click', abortMission);
+        
+        btnModeDig?.addEventListener('click', () => {
+            gameState.mode = 'dig';
+            updateModeButtons();
+        });
+        
+        btnModeFlag?.addEventListener('click', () => {
+            gameState.mode = 'flag';
+            updateModeButtons();
+        });
+
+        // Botón Mute
+        let isMuted = false;
+        document.getElementById('btn-mute')?.addEventListener('click', function() {
+            isMuted = !isMuted;
+            const icon = document.getElementById('mute-icon');
+            if(isMuted) {
+                icon.setAttribute('data-lucide', 'volume-x');
+                this.classList.add('text-primary');
+                this.classList.remove('text-neutral-400');
+            } else {
+                icon.setAttribute('data-lucide', 'volume-2');
+                this.classList.remove('text-primary');
+                this.classList.add('text-neutral-400');
+            }
+            lucide.createIcons();
+        });
+
+        // Checkbox recordar
+        document.getElementById('toggle-remember')?.addEventListener('click', function() {
+            const box = document.getElementById('remember-box');
+            box?.classList.toggle('bg-primary');
+            box?.classList.toggle('border-primary');
+            box?.classList.toggle('text-white');
+            box?.classList.toggle('text-transparent');
+            box?.classList.toggle('bg-transparent');
+        });
+        
+        }); // Cierre de DOMContentLoaded
     </script>
 </body>
 </html>

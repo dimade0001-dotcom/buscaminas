@@ -353,18 +353,35 @@
         </main>
     </div>
 
-    <!-- Script Unificado y Modular para Garantizar Sincronía y Correcta Ejecución de Firebase -->
+    <!-- Script Unificado, Modular y Robusto con Fallback Local Automático (Evita que se quede colgado) -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, collection, query, onSnapshot, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // ---- CONFIGURACIÓN E INICIALIZACIÓN DE FIREBASE (Garantizado al Cargar el Módulo) ----
-        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'danger-mines-pro';
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
+        // ---- DETECCION DE ENTORNO Y FALLBACK DE EMERGENCIA ----
+        let db = null;
+        let auth = null;
+        let appId = 'danger-mines-pro';
+        let isFirebaseActive = false;
+        let currentUser = null;
+
+        try {
+            if (typeof __firebase_config !== 'undefined' && __firebase_config && __firebase_config !== "null") {
+                const firebaseConfig = JSON.parse(__firebase_config);
+                const app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+                appId = typeof __app_id !== 'undefined' ? __app_id : 'danger-mines-pro';
+                isFirebaseActive = true;
+                console.log("Firebase inicializado correctamente.");
+            } else {
+                console.warn("No se detectó configuración de Firebase. Iniciando en modo local.");
+            }
+        } catch (e) {
+            console.error("Fallo durante la inicialización de Firebase. Activando modo local de emergencia.", e);
+            isFirebaseActive = false;
+        }
 
         // ---- ESTADO GLOBAL DEL JUEGO ----
         const gameState = {
@@ -383,7 +400,6 @@
         };
 
         let authMode = 'login'; // 'login' o 'register'
-        let currentUser = null;
 
         // ---- CAPTURA DE ELEMENTOS DEL DOM ----
         const screens = {
@@ -493,41 +509,55 @@
                     noise.stop(audioCtx.currentTime + 0.45);
                 }
             } catch (e) {
-                console.warn("AudioContext bloqueado temporalmente por navegador.");
+                console.warn("AudioContext bloqueado temporalmente por el navegador.");
             }
         }
 
         // ---- AUTENTICACIÓN INICIAL SECUENCIAL (Regla 3) ----
         const initAuth = async () => {
-            try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    const customCred = await signInWithCustomToken(auth, __initial_auth_token);
-                    currentUser = customCred.user;
-                } else {
-                    const anonCred = await signInAnonymously(auth);
-                    currentUser = anonCred.user;
+            if (isFirebaseActive) {
+                try {
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        const customCred = await signInWithCustomToken(auth, __initial_auth_token);
+                        currentUser = customCred.user;
+                    } else {
+                        const anonCred = await signInAnonymously(auth);
+                        currentUser = anonCred.user;
+                    }
+                    console.log("Enlace anónimo establecido correctamente:", currentUser.uid);
+                    onAuthStateChanged(auth, (user) => { if (user) currentUser = user; });
+                } catch (error) {
+                    console.error("Fallo de inicialización táctica Firebase. Forzando local:", error);
+                    isFirebaseActive = false;
                 }
-                console.log("Enlace anónimo establecido correctamente:", currentUser.uid);
-                
-                // Mostrar pantalla de acceso táctica una vez autenticado
-                screens.loading.classList.add('hidden');
-                screens.auth.classList.remove('hidden');
-                screens.auth.classList.add('flex');
-            } catch (error) {
-                console.error("Fallo de inicialización táctica:", error);
-                showNotification("Error de red militar", "shield-alert");
-                screens.loading.classList.add('hidden');
-                screens.auth.classList.remove('hidden');
-                screens.auth.classList.add('flex');
+            }
+            
+            // Ocultar pantalla de carga SIEMPRE (No se queda bloqueado)
+            screens.loading.classList.add('hidden');
+            screens.auth.classList.remove('hidden');
+            screens.auth.classList.add('flex');
+            
+            if (isFirebaseActive) {
+                showNotification("Enlace encriptado establecido (Nube)", "shield-check");
+            } else {
+                showNotification("Radar enlazado en modo local (Offline)", "shield");
+                // Cargar ranking offline ficticio de ejemplo al iniciar modo local
+                setupLocalRanking();
             }
         };
 
-        // Escuchar cambios de estado de autenticación (Regla 3)
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                currentUser = user;
+        // Temporizador de seguridad para evitar bloqueos
+        setTimeout(() => {
+            if (!screens.loading.classList.contains('hidden')) {
+                console.warn("Failsafe activado. Cerrando pantalla de carga manualmente.");
+                isFirebaseActive = false;
+                screens.loading.classList.add('hidden');
+                screens.auth.classList.remove('hidden');
+                screens.auth.classList.add('flex');
+                showNotification("Conectado en Modo Local", "shield");
+                setupLocalRanking();
             }
-        });
+        }, 2500);
 
         // ---- ALTERNAR MODOS DE INGRESO ----
         tabModeLogin.addEventListener('click', () => {
@@ -546,7 +576,50 @@
             authBtnText.textContent = "Registrar Nuevo Agente";
         });
 
-        // ---- INICIAR SESIÓN O REGISTRARSE (Firestore Reglas 1 y 2) ----
+        // ---- ACCESO LOCAL (LOCAL STORAGE FALLBACK) ----
+        function getLocalAgent(username) {
+            const data = localStorage.getItem(`agent_${username}`);
+            return data ? JSON.parse(data) : null;
+        }
+
+        function saveLocalAgent(username, data) {
+            localStorage.setItem(`agent_${username}`, JSON.stringify(data));
+            // Actualizar tabla global de agentes para el Ranking local
+            let agents = JSON.parse(localStorage.getItem('local_agents') || '[]');
+            if (!agents.includes(username)) {
+                agents.push(username);
+                localStorage.setItem('local_agents', JSON.stringify(agents));
+            }
+        }
+
+        function setupLocalRanking() {
+            let agents = JSON.parse(localStorage.getItem('local_agents') || '[]');
+            if (agents.length === 0) {
+                // Poblamos con un ranking ficticio inicial para que no esté vacío
+                const defaults = [
+                    { username: 'ghost_sniper', displayName: 'Ghost Sniper', totalPoints: 12500 },
+                    { username: 'alpha_wolf', displayName: 'Alpha Wolf', totalPoints: 9200 },
+                    { username: 'bravo_six', displayName: 'Bravo Six', totalPoints: 5400 }
+                ];
+                defaults.forEach(d => {
+                    saveLocalAgent(d.username, d);
+                });
+            }
+            updateLocalRankingUI();
+        }
+
+        function updateLocalRankingUI() {
+            let agents = JSON.parse(localStorage.getItem('local_agents') || '[]');
+            const playersList = [];
+            agents.forEach(user => {
+                const data = getLocalAgent(user);
+                if (data) playersList.push(data);
+            });
+            playersList.sort((a, b) => b.totalPoints - a.totalPoints);
+            renderRanking(playersList.slice(0, 10));
+        }
+
+        // ---- REGISTRO E INICIO DE SESIÓN ----
         authForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const cleanName = authUsername.value.trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
@@ -559,69 +632,116 @@
             }
 
             playSound('click');
-            showNotification("Conectando con el servidor seguro...", "loader");
+            showNotification("Estableciendo enlace de seguridad...", "loader");
 
             try {
-                // Verificar que la autenticación anónima esté lista
-                if (!currentUser) {
-                    const anonCred = await signInAnonymously(auth);
-                    currentUser = anonCred.user;
-                }
-
-                // Ruta pública estricta para persistir agentes de forma segura (Regla 1)
-                const agentDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'agents', cleanName);
-                const agentDocSnap = await getDoc(agentDocRef);
-
-                if (authMode === 'register') {
-                    if (agentDocSnap.exists()) {
-                        showNotification("Este identificador ya está en uso", "shield-alert");
-                        return;
+                if (isFirebaseActive) {
+                    // ---- ENTORNO DE FIREBASE ACTIVO ----
+                    if (!currentUser) {
+                        const anonCred = await signInAnonymously(auth);
+                        currentUser = anonCred.user;
                     }
 
-                    // Guardar agente nuevo de forma optimizada
-                    const newAgentData = {
-                        username: cleanName,
-                        displayName: displayUserName,
-                        password: passwordValue,
-                        totalPoints: 0,
-                        level: 1,
-                        history: [],
-                        createdAt: new Date().toISOString()
-                    };
+                    const agentDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'agents', cleanName);
+                    const agentDocSnap = await getDoc(agentDocRef);
 
-                    await setDoc(agentDocRef, newAgentData);
+                    if (authMode === 'register') {
+                        if (agentDocSnap.exists()) {
+                            showNotification("El identificador ya está en uso", "shield-alert");
+                            return;
+                        }
 
-                    gameState.username = cleanName;
-                    gameState.totalPoints = 0;
-                    gameState.level = 1;
-                    gameState.history = [];
-                    
-                    showNotification("Agente registrado exitosamente", "shield-check");
+                        const newAgentData = {
+                            username: cleanName,
+                            displayName: displayUserName,
+                            password: passwordValue,
+                            totalPoints: 0,
+                            level: 1,
+                            history: [],
+                            createdAt: new Date().toISOString()
+                        };
+
+                        await setDoc(agentDocRef, newAgentData);
+
+                        gameState.username = cleanName;
+                        gameState.totalPoints = 0;
+                        gameState.level = 1;
+                        gameState.history = [];
+                        
+                        showNotification("Agente registrado con éxito", "shield-check");
+                    } else {
+                        if (!agentDocSnap.exists()) {
+                            showNotification("El agente no está registrado", "shield-alert");
+                            return;
+                        }
+
+                        const data = agentDocSnap.data();
+                        if (data.password !== passwordValue) {
+                            showNotification("Código de seguridad incorrecto", "shield-alert");
+                            return;
+                        }
+
+                        gameState.username = cleanName;
+                        gameState.totalPoints = data.totalPoints || 0;
+                        gameState.level = data.level || 1;
+                        gameState.history = data.history || [];
+                    }
+
+                    // Suscribirse a los datos en la Nube
+                    listenToRanking();
+
                 } else {
-                    // Iniciar Sesión de forma segura
-                    if (!agentDocSnap.exists()) {
-                        showNotification("El agente no está registrado", "shield-alert");
-                        return;
+                    // ---- ENTORNO LOCAL FALLBACK ----
+                    const localAgent = getLocalAgent(cleanName);
+
+                    if (authMode === 'register') {
+                        if (localAgent) {
+                            showNotification("El identificador ya está en uso local", "shield-alert");
+                            return;
+                        }
+
+                        const newAgentData = {
+                            username: cleanName,
+                            displayName: displayUserName,
+                            password: passwordValue,
+                            totalPoints: 0,
+                            level: 1,
+                            history: []
+                        };
+
+                        saveLocalAgent(cleanName, newAgentData);
+
+                        gameState.username = cleanName;
+                        gameState.totalPoints = 0;
+                        gameState.level = 1;
+                        gameState.history = [];
+
+                        showNotification("Agente local registrado", "shield-check");
+                    } else {
+                        if (!localAgent) {
+                            showNotification("Agente local no encontrado", "shield-alert");
+                            return;
+                        }
+
+                        if (localAgent.password !== passwordValue) {
+                            showNotification("Código de seguridad incorrecto", "shield-alert");
+                            return;
+                        }
+
+                        gameState.username = cleanName;
+                        gameState.totalPoints = localAgent.totalPoints || 0;
+                        gameState.level = localAgent.level || 1;
+                        gameState.history = localAgent.history || [];
                     }
 
-                    const data = agentDocSnap.data();
-                    if (data.password !== passwordValue) {
-                        showNotification("Código de seguridad incorrecto", "shield-alert");
-                        return;
-                    }
-
-                    gameState.username = cleanName;
-                    gameState.totalPoints = data.totalPoints || 0;
-                    gameState.level = data.level || 1;
-                    gameState.history = data.history || [];
+                    // Cargar ranking local
+                    updateLocalRankingUI();
                 }
 
                 // Sincronizar UI del Header
                 headerUsername.textContent = displayUserName;
                 headerBalance.textContent = `${gameState.totalPoints} PTS`;
 
-                // Iniciar suscripción de rankings y renderizado de datos
-                listenToRanking();
                 renderHistory();
 
                 // Cambiar pantallas
@@ -630,16 +750,17 @@
                 screens.app.classList.remove('hidden');
                 screens.app.classList.add('flex');
 
-                showNotification(`Línea segura establecida con: ${displayUserName}`, "shield");
+                showNotification(`Línea segura establecida: ${displayUserName}`, "shield");
 
             } catch (error) {
                 console.error("Error en Operación Auth:", error);
-                showNotification("Fallo de red al conectar", "shield-alert");
+                showNotification("Fallo de red militar", "shield-alert");
             }
         });
 
-        // ---- RANKING EN VIVO (Regla 2: Sin queries complejos de Firebase) ----
+        // ---- SENSOR DE RANKING CLOUD (Regla 2) ----
         function listenToRanking() {
+            if (!isFirebaseActive) return;
             const agentsCollectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'agents');
             
             onSnapshot(agentsCollectionRef, (snapshot) => {
@@ -651,11 +772,11 @@
                     }
                 });
 
-                // Ordenación pura en memoria local para cumplir con la Regla 2
+                // Ordenación en memoria
                 playersList.sort((a, b) => b.totalPoints - a.totalPoints);
-                renderRanking(playersList.slice(0, 10)); // Top 10
+                renderRanking(playersList.slice(0, 10));
             }, (error) => {
-                console.error("Fallo obteniendo ranking militar:", error);
+                console.error("Fallo obteniendo ranking de la nube:", error);
             });
         }
 
@@ -691,7 +812,7 @@
             });
         }
 
-        // ---- RENDERIZADO OPTIMIZADO DEL HISTORIAL ----
+        // ---- RENDERIZADO DEL HISTORIAL ----
         function renderHistory() {
             const container = document.getElementById('history-container');
             if (!container) return;
@@ -702,7 +823,6 @@
             }
 
             container.innerHTML = '';
-            // Copiar y ordenar para mostrar siempre lo más reciente
             const sortedHistory = [...gameState.history].reverse();
 
             sortedHistory.forEach(item => {
@@ -729,7 +849,6 @@
             gameState.isPlaying = true;
             gameState.mode = 'dig';
             
-            // Configuración del radar por nivel
             gameState.gridSize = Math.min(5 + Math.floor(gameState.level / 3), 8); 
             gameState.totalMines = 2 + gameState.level; 
             gameState.minesLeft = gameState.totalMines;
@@ -893,7 +1012,6 @@
         async function endGame(isWin) {
             gameState.isPlaying = false;
             
-            // Mostrar todas las minas terrestres
             const size = gameState.gridSize;
             for (let y = 0; y < size; y++) {
                 for (let x = 0; x < size; x++) {
@@ -948,7 +1066,6 @@
             lucide.createIcons();
             updateHUD();
 
-            // Agregar entrada de historial optimizada localmente
             const currentEntry = {
                 level: isWin ? gameState.level - 1 : gameState.level,
                 status: isWin ? 'Completado' : 'Fallido',
@@ -964,15 +1081,26 @@
 
             renderHistory();
 
-            // Sincronizar estado completo del perfil con Firestore (Ruta pública estricta - Regla 1)
+            // Sincronizar estado completo del perfil (Regla 1)
             if (gameState.username) {
                 try {
-                    const agentDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'agents', gameState.username);
-                    await setDoc(agentDocRef, {
-                        totalPoints: gameState.totalPoints,
-                        level: gameState.level,
-                        history: gameState.history
-                    }, { merge: true });
+                    if (isFirebaseActive) {
+                        const agentDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'agents', gameState.username);
+                        await setDoc(agentDocRef, {
+                            totalPoints: gameState.totalPoints,
+                            level: gameState.level,
+                            history: gameState.history
+                        }, { merge: true });
+                    } else {
+                        const localData = getLocalAgent(gameState.username);
+                        if (localData) {
+                            localData.totalPoints = gameState.totalPoints;
+                            localData.level = gameState.level;
+                            localData.history = gameState.history;
+                            saveLocalAgent(gameState.username, localData);
+                            updateLocalRankingUI();
+                        }
+                    }
                 } catch (err) {
                     console.error("Error al sincronizar datos:", err);
                 }
@@ -1036,16 +1164,26 @@
             if (!gameState.username) return;
 
             try {
-                const agentDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'agents', gameState.username);
-                const agentSnap = await getDoc(agentDocRef);
-                const currentData = agentSnap.data();
+                if (isFirebaseActive) {
+                    const agentDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'agents', gameState.username);
+                    const agentSnap = await getDoc(agentDocRef);
+                    const currentData = agentSnap.data();
 
-                if (currentData.password !== oldPass) {
-                    showNotification("Código de acceso incorrecto", "shield-alert");
-                    return;
+                    if (currentData.password !== oldPass) {
+                        showNotification("Código de acceso incorrecto", "shield-alert");
+                        return;
+                    }
+
+                    await setDoc(agentDocRef, { password: newPass }, { merge: true });
+                } else {
+                    const localData = getLocalAgent(gameState.username);
+                    if (localData.password !== oldPass) {
+                        showNotification("Código de acceso incorrecto", "shield-alert");
+                        return;
+                    }
+                    localData.password = newPass;
+                    saveLocalAgent(gameState.username, localData);
                 }
-
-                await setDoc(agentDocRef, { password: newPass }, { merge: true });
                 showNotification("Contraseña actualizada", "shield-check");
                 settingsForm.reset();
                 settingsModal.classList.add('hidden');
@@ -1058,16 +1196,27 @@
 
         // Restablecer progreso táctico
         btnResetProgress.addEventListener('click', async () => {
-            if (!confirm("¿CONFIRMAS RESTABLECER TU PROGRESO? Perderás tus puntos y volverás al Nivel 1.")) return;
+            if (!confirm("¿CONFIRMAS RESTABLECER TU PROGRESO? Volverás a Nivel 1 y perderás tus puntos.")) return;
             
             playSound('explosion');
             try {
-                const agentDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'agents', gameState.username);
-                await setDoc(agentDocRef, {
-                    totalPoints: 0,
-                    level: 1,
-                    history: []
-                }, { merge: true });
+                if (isFirebaseActive) {
+                    const agentDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'agents', gameState.username);
+                    await setDoc(agentDocRef, {
+                        totalPoints: 0,
+                        level: 1,
+                        history: []
+                    }, { merge: true });
+                } else {
+                    const localData = getLocalAgent(gameState.username);
+                    if (localData) {
+                        localData.totalPoints = 0;
+                        localData.level = 1;
+                        localData.history = [];
+                        saveLocalAgent(gameState.username, localData);
+                        updateLocalRankingUI();
+                    }
+                }
 
                 gameState.totalPoints = 0;
                 gameState.level = 1;
@@ -1101,7 +1250,6 @@
             updateModeButtons();
         });
 
-        // Botón Silenciar
         const btnMute = document.getElementById('btn-mute');
         btnMute.addEventListener('click', () => {
             gameState.isMuted = !gameState.isMuted;
@@ -1118,7 +1266,6 @@
             lucide.createIcons();
         });
 
-        // Cerrar sesión
         document.getElementById('btn-logout').addEventListener('click', () => {
             playSound('click');
             screens.app.classList.add('hidden');
@@ -1128,7 +1275,6 @@
             authForm.reset();
         });
 
-        // Alternar visualizar contraseña
         document.getElementById('toggle-password').addEventListener('click', function () {
             const pwdInput = document.getElementById('auth-password');
             const icon = this.querySelector('i');
@@ -1142,7 +1288,6 @@
             lucide.createIcons();
         });
 
-        // Selector de pestaña inferior
         const tabBtns = document.querySelectorAll('.tab-btn');
         const tabContents = document.querySelectorAll('.tab-content');
 

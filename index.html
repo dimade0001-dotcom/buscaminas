@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -30,7 +31,7 @@
     </script>
 
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght=400;500;600;700;800;900&display=swap');
         
         .pb-safe { padding-bottom: calc(env(safe-area-inset-bottom) + 0.5rem); }
         .scrollbar-hide::-webkit-scrollbar { display: none; }
@@ -38,7 +39,7 @@
         body { -webkit-tap-highlight-color: transparent; }
         input { font-size: 16px !important; }
         
-        /* Animaciones mejoradas */
+        /* Animaciones tácticas */
         @keyframes pulse-danger {
             0%, 100% { box-shadow: 0 0 15px rgba(220, 38, 38, 0.25); }
             50% { box-shadow: 0 0 35px rgba(220, 38, 38, 0.7); }
@@ -52,76 +53,80 @@
         .glow-success { animation: pulse-success 2.5s infinite ease-in-out; }
 
         @keyframes slide-up {
-            from { transform: translateY(20px); opacity: 0; }
+            from { transform: translateY(15px); opacity: 0; }
             to { transform: translateY(0); opacity: 1; }
         }
-        .animate-slide-up { animation: slide-up 0.4s ease-out forwards; }
+        .animate-slide-up { animation: slide-up 0.3s ease-out forwards; }
 
         @keyframes shake {
             0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-3px); }
-            75% { transform: translateX(3px); }
+            25% { transform: translateX(-4px); }
+            75% { transform: translateX(4px); }
         }
-        .animate-shake { animation: shake 0.5s ease-in-out; }
+        .animate-shake { animation: shake 0.4s ease-in-out; }
 
         .cell {
             aspect-ratio: 1;
-            transition: all 0.15s ease;
+            transition: all 0.12s ease;
             user-select: none;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-weight: 800;
-            font-size: 1.2rem;
+            font-weight: 900;
+            font-size: 1.15rem;
             cursor: pointer;
         }
-        .cell:active { transform: scale(0.92); }
+        .cell:active { transform: scale(0.90); }
         
         .cell.hidden-cell {
-            background: linear-gradient(145deg, #1f1f25, #121217);
-            border: 1px solid #2d2d35;
-            box-shadow: inset 0 2px 4px rgba(255,255,255,0.05);
+            background: linear-gradient(135deg, #1a1a22, #0d0d12);
+            border: 1px solid #2e2e38;
+            box-shadow: inset 0 2px 4px rgba(255,255,255,0.03);
+        }
+        .cell.hidden-cell:hover {
+            border-color: #dc2626;
+            background: linear-gradient(135deg, #22222a, #111117);
         }
         .cell.revealed-cell {
-            background: #0d0d12;
-            border: 1px solid #1a1a20;
-            box-shadow: inset 0 2px 8px rgba(0,0,0,0.5);
+            background: #06060a;
+            border: 1px solid #14141a;
+            box-shadow: inset 0 2px 6px rgba(0,0,0,0.6);
         }
         .cell.mine-hit {
             background: #dc2626 !important;
             border-color: #ef4444 !important;
-            animation: pulse-danger 1s infinite ease-in-out;
+            animation: pulse-danger 0.8s infinite ease-in-out;
         }
 
-        /* Colores de números */
-        .c-1 { color: #3b82f6; } /* Azul */
-        .c-2 { color: #10b981; } /* Verde */
-        .c-3 { color: #ef4444; } /* Rojo */
-        .c-4 { color: #8b5cf6; } /* Morado */
-        .c-5 { color: #f59e0b; } /* Naranja */
-        .c-6 { color: #06b6d4; } /* Cyan */
-        .c-7 { color: #ec4899; } /* Rosa */
-        .c-8 { color: #64748b; } /* Gris */
+        /* Números del radar */
+        .c-1 { color: #3b82f6; text-shadow: 0 0 10px rgba(59,130,246,0.3); }
+        .c-2 { color: #10b981; text-shadow: 0 0 10px rgba(16,185,129,0.3); }
+        .c-3 { color: #ef4444; text-shadow: 0 0 10px rgba(239,68,68,0.3); }
+        .c-4 { color: #8b5cf6; text-shadow: 0 0 10px rgba(139,92,246,0.3); }
+        .c-5 { color: #f59e0b; text-shadow: 0 0 10px rgba(245,158,11,0.3); }
+        .c-6 { color: #06b6d4; text-shadow: 0 0 10px rgba(6,182,212,0.3); }
+        .c-7 { color: #ec4899; text-shadow: 0 0 10px rgba(236,72,153,0.3); }
+        .c-8 { color: #64748b; text-shadow: 0 0 10px rgba(100,116,139,0.3); }
     </style>
 </head>
 <body class="bg-gradient-to-b from-darker to-neutral-950 text-neutral-200 font-sans selection:bg-primary/30 overflow-x-hidden min-h-screen flex flex-col">
 
-    <!-- Notificaciones -->
-    <div id="notification" class="fixed top-20 left-1/2 transform -translate-x-1/2 z-[100] hidden">
-        <div class="bg-neutral-900/95 backdrop-blur-sm border border-neutral-700 px-6 py-3 rounded-xl shadow-2xl flex items-center gap-3 min-w-[220px]">
-            <i id="notification-icon" data-lucide="info" class="w-5 h-5"></i>
+    <!-- Notificaciones flotantes tácticas -->
+    <div id="notification" class="fixed top-6 left-1/2 transform -translate-x-1/2 z-[100] hidden">
+        <div class="bg-neutral-900/95 backdrop-blur-md border border-neutral-700 px-6 py-3 rounded-xl shadow-2xl flex items-center gap-3 min-w-[280px] animate-slide-up">
+            <i id="notification-icon" data-lucide="info" class="w-5 h-5 text-primary"></i>
             <span id="notification-text" class="font-semibold text-sm"></span>
         </div>
     </div>
 
-    <!-- Pantalla de Carga -->
+    <!-- Pantalla de Carga Inicial -->
     <div id="loading-screen" class="min-h-screen bg-gradient-to-b from-darker to-neutral-950 flex flex-col justify-center items-center text-primary gap-6 fixed inset-0 z-50">
         <div class="relative">
             <i data-lucide="bomb" class="w-20 h-20 animate-pulse drop-shadow-[0_0_30px_rgba(220,38,38,0.6)]"></i>
             <div class="absolute inset-0 bg-primary/20 blur-3xl rounded-full"></div>
         </div>
         <div class="text-center">
-            <span class="font-mono text-sm tracking-[0.4em] uppercase text-neutral-400">Inicializando sistema</span>
+            <span class="font-mono text-sm tracking-[0.4em] uppercase text-neutral-400">Estableciendo Enlace Encriptado</span>
             <div class="flex gap-2 justify-center mt-2">
                 <div class="w-2 h-2 rounded-full bg-primary animate-bounce" style="animation-delay: 0s"></div>
                 <div class="w-2 h-2 rounded-full bg-primary animate-bounce" style="animation-delay: 0.2s"></div>
@@ -130,46 +135,52 @@
         </div>
     </div>
 
-    <!-- Pantalla de Autenticación -->
+    <!-- Pantalla de Autenticación / Registro -->
     <div id="auth-screen" class="min-h-screen bg-gradient-to-b from-darker to-neutral-950 flex flex-col items-center justify-center p-6 hidden w-full">
-        <div class="w-full max-w-md bg-neutral-900/70 backdrop-blur-sm border border-neutral-800 rounded-3xl p-8 shadow-[0_0_80px_rgba(220,38,38,0.18)] relative overflow-hidden">
+        <div class="w-full max-w-md bg-neutral-900/70 backdrop-blur-md border border-neutral-800 rounded-3xl p-8 shadow-[0_0_80px_rgba(220,38,38,0.15)] relative overflow-hidden">
             <div class="absolute -top-32 -right-32 w-64 h-64 bg-primary/20 rounded-full blur-[140px] pointer-events-none"></div>
             <div class="absolute -bottom-32 -left-32 w-64 h-64 bg-primary/10 rounded-full blur-[140px] pointer-events-none"></div>
             
-            <div class="text-center mb-10 relative z-10">
-                <div class="inline-block p-5 bg-neutral-950/80 rounded-2xl border border-neutral-700 shadow-inner mb-6 relative">
+            <div class="text-center mb-8 relative z-10">
+                <div class="inline-block p-4 bg-neutral-950/80 rounded-2xl border border-neutral-700 shadow-inner mb-4 relative">
                     <div class="absolute inset-0 border border-primary/40 rounded-2xl animate-ping opacity-30"></div>
-                    <i data-lucide="shield-alert" class="w-14 h-14 text-primary drop-shadow-[0_0_20px_rgba(220,38,38,0.5)]"></i>
+                    <i data-lucide="shield-alert" class="w-12 h-12 text-primary drop-shadow-[0_0_20px_rgba(220,38,38,0.5)]"></i>
                 </div>
-                <h1 class="text-5xl font-black italic tracking-wider uppercase text-transparent bg-clip-text bg-gradient-to-r from-primary via-accent to-white">
+                <h1 class="text-4xl font-black italic tracking-wider uppercase text-transparent bg-clip-text bg-gradient-to-r from-primary via-accent to-white">
                     Danger <span class="text-primary">Mines</span>
                 </h1>
-                <p class="text-neutral-500 text-xs mt-3 uppercase tracking-[0.3em] font-bold">Operación de Élite</p>
+                <p class="text-neutral-500 text-xs mt-2 uppercase tracking-[0.3em] font-bold">Terminal de Agentes</p>
             </div>
 
-            <form id="auth-form" class="space-y-5 relative z-10">
-                <div class="space-y-2">
-                   <label class="text-xs font-bold uppercase text-neutral-400 tracking-wider">Identificador</label>
-                   <input type="text" id="auth-username" class="w-full bg-neutral-950/60 border border-neutral-700 rounded-xl py-4 px-4 text-white font-medium outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all placeholder:text-neutral-600" placeholder="Tu nombre de agente" required />
+            <!-- Selector de Modo (Entrar vs Registrarse) -->
+            <div class="flex bg-neutral-950/90 rounded-xl p-1 mb-6 border border-neutral-800 relative z-10">
+                <button id="tab-mode-login" class="flex-1 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all bg-primary text-white shadow">Ingresar</button>
+                <button id="tab-mode-register" class="flex-1 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all text-neutral-400 hover:text-white">Registrarse</button>
+            </div>
+
+            <form id="auth-form" class="space-y-4 relative z-10">
+                <div class="space-y-1.5">
+                   <label class="text-[10px] font-bold uppercase text-neutral-400 tracking-wider">Identificador de Agente (Único)</label>
+                   <input type="text" id="auth-username" class="w-full bg-neutral-950/60 border border-neutral-700 rounded-xl py-3.5 px-4 text-white font-medium outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all placeholder:text-neutral-600 font-mono" placeholder="AGENTE_ALPHA" required />
                 </div>
-                <div class="space-y-2 relative">
-                   <label class="text-xs font-bold uppercase text-neutral-400 tracking-wider">Código de acceso</label>
+                <div class="space-y-1.5 relative">
+                   <label class="text-[10px] font-bold uppercase text-neutral-400 tracking-wider">Código de Seguridad (Acceso)</label>
                    <div class="relative">
-                     <input type="password" id="auth-password" class="w-full bg-neutral-950/60 border border-neutral-700 rounded-xl py-4 px-4 text-white font-medium outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all placeholder:text-neutral-600 pr-12" placeholder="••••••••" required />
+                     <input type="password" id="auth-password" class="w-full bg-neutral-950/60 border border-neutral-700 rounded-xl py-3.5 px-4 text-white font-medium outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all placeholder:text-neutral-600 pr-12 font-mono" placeholder="••••••••" required />
                      <button type="button" id="toggle-password" class="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-white transition-colors">
                        <i data-lucide="eye" class="w-5 h-5"></i>
                      </button>
                    </div>
                 </div>
 
-                <button type="submit" id="auth-submit-btn" class="w-full bg-gradient-to-r from-primary to-accent hover:from-accent hover:to-primary text-white font-bold uppercase tracking-wider py-4 rounded-xl shadow-lg shadow-primary/20 transition-all flex justify-center items-center gap-3 mt-6 text-base active:scale-[0.98]">
-                  <i data-lucide="log-in" class="w-5 h-5"></i> <span>Iniciar Operación</span>
+                <button type="submit" id="auth-submit-btn" class="w-full bg-gradient-to-r from-primary to-accent hover:from-accent hover:to-primary text-white font-bold uppercase tracking-wider py-4 rounded-xl shadow-lg shadow-primary/20 transition-all flex justify-center items-center gap-3 mt-6 text-sm active:scale-[0.98]">
+                  <i data-lucide="log-in" class="w-5 h-5"></i> <span id="auth-btn-text">Iniciar Operación</span>
                 </button>
             </form>
         </div>
     </div>
 
-    <!-- Pantalla Principal -->
+    <!-- Pantalla Principal de la Operación -->
     <div id="app-screen" class="hidden flex-col min-h-screen pb-24 w-full">
         <!-- Header -->
         <header class="sticky top-0 z-40 bg-neutral-950/90 backdrop-blur-md border-b border-neutral-800 px-5 py-4 shadow-lg flex justify-between items-center w-full">
@@ -182,18 +193,54 @@
                 <span class="text-xs text-neutral-400">Agente: <span id="header-username" class="text-primary font-medium">---</span></span>
               </div>
             </div>
-            <div class="flex items-center gap-3">
-              <div class="bg-neutral-900 px-3 py-2 rounded-lg border border-neutral-700 shadow-sm">
-                <span id="header-balance" class="font-bold text-yellow-400">0 PTS</span>
+            
+            <div class="flex items-center gap-2">
+              <div class="bg-neutral-900 px-3 py-2 rounded-lg border border-neutral-800 shadow-sm">
+                <span id="header-balance" class="font-bold text-yellow-400 text-sm">0 PTS</span>
               </div>
-              <button id="btn-mute" class="p-2 rounded-lg bg-neutral-900 border border-neutral-700 text-neutral-400 hover:text-white hover:bg-neutral-800 transition-colors">
+              <button id="btn-settings" class="p-2 rounded-lg bg-neutral-900 border border-neutral-800 text-neutral-400 hover:text-white hover:bg-neutral-800 transition-colors" title="Ajustes de Perfil">
+                <i data-lucide="settings" class="w-4 h-4"></i>
+              </button>
+              <button id="btn-mute" class="p-2 rounded-lg bg-neutral-900 border border-neutral-800 text-neutral-400 hover:text-white hover:bg-neutral-800 transition-colors">
                 <i data-lucide="volume-2" id="mute-icon" class="w-4 h-4"></i>
               </button>
             </div>
         </header>
 
+        <!-- Modal de Ajustes / Modificación de Perfil -->
+        <div id="settings-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-6 hidden">
+            <div class="bg-neutral-900 border border-neutral-800 rounded-3xl p-6 w-full max-w-md relative animate-slide-up">
+                <button id="btn-close-settings" class="absolute top-4 right-4 text-neutral-400 hover:text-white transition-colors">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+                <h3 class="text-lg font-bold text-white mb-4 uppercase tracking-wider border-b border-neutral-800 pb-2">Panel de Control de Agente</h3>
+                
+                <form id="settings-form" class="space-y-4">
+                    <div class="space-y-1">
+                        <label class="text-[10px] uppercase font-bold text-neutral-400">Código de Acceso Actual</label>
+                        <input type="password" id="settings-old-password" class="w-full bg-neutral-950 border border-neutral-700 rounded-xl py-2 px-3 text-sm text-white font-mono" placeholder="Introduce clave actual" required />
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-[10px] uppercase font-bold text-neutral-400">Nueva Contraseña</label>
+                        <input type="password" id="settings-new-password" class="w-full bg-neutral-950 border border-neutral-700 rounded-xl py-2 px-3 text-sm text-white font-mono" placeholder="Nueva clave de acceso" required />
+                    </div>
+                    <button type="submit" class="w-full bg-primary hover:bg-red-700 text-white font-bold py-2.5 rounded-xl text-xs uppercase tracking-wider transition-all">
+                        Actualizar Código de Acceso
+                    </button>
+                </form>
+
+                <div class="mt-6 border-t border-neutral-800 pt-4 space-y-3">
+                    <h4 class="text-xs font-bold text-red-500 uppercase tracking-wider">Zona de Emergencia</h4>
+                    <p class="text-[11px] text-neutral-400">Al restablecer se borrarán tus puntos totales y tu nivel volverá al rango inicial. Esta acción no se puede deshacer.</p>
+                    <button id="btn-reset-progress" class="w-full border border-red-500/30 hover:bg-red-950/30 text-red-500 text-xs font-bold py-2.5 rounded-xl uppercase tracking-wider transition-all">
+                        Restablecer Progreso a Cero
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <main class="flex-1 p-5 flex flex-col items-center w-full">
-            <!-- Tabs -->
+            <!-- Tabs de navegación -->
             <div class="flex w-full max-w-md bg-neutral-900/80 rounded-xl p-1.5 mb-6 border border-neutral-800 shadow-inner">
                 <button class="tab-btn flex-1 py-3 rounded-lg font-bold text-sm uppercase tracking-wider transition-all bg-gradient-to-r from-primary to-accent text-white shadow-md" data-tab="game">Juego</button>
                 <button class="tab-btn flex-1 py-3 rounded-lg font-bold text-sm uppercase tracking-wider transition-all text-neutral-400 hover:text-white hover:bg-neutral-800/50" data-tab="history">Historial</button>
@@ -207,14 +254,14 @@
                   
                   <div class="flex justify-between items-center mb-5 relative z-10">
                     <div class="flex items-center gap-2 font-bold text-lg text-primary">
-                      <i data-lucide="shield-alert" class="w-5 h-5"></i>
+                      <i data-lucide="shield-alert" class="w-5 h-5 animate-pulse"></i>
                       <span id="game-level">Nivel 1</span>
                     </div>
                     <div class="flex bg-neutral-950/80 border border-neutral-700 rounded-lg overflow-hidden shadow-sm">
-                       <div class="flex items-center gap-2 px-4 py-2 bg-neutral-900/70 border-r border-neutral-700 text-primary" title="Minas restantes">
+                       <div class="flex items-center gap-2 px-4 py-2 bg-neutral-900/70 border-r border-neutral-700 text-primary">
                           <i data-lucide="bomb" class="w-4 h-4"></i> <span id="mines-count">3</span>
                        </div>
-                       <div class="flex items-center gap-2 px-4 py-2 text-neutral-300" title="Recompensa actual">
+                       <div class="flex items-center gap-2 px-4 py-2 text-neutral-300">
                           <i data-lucide="star" class="w-4 h-4 text-yellow-500"></i> <span id="current-points">+0</span>
                        </div>
                     </div>
@@ -222,7 +269,7 @@
     
                   <div id="game-controls-idle" class="relative z-10">
                       <button id="btn-start-game" class="w-full bg-gradient-to-r from-primary to-accent hover:from-accent hover:to-primary text-white font-bold uppercase tracking-wider py-4 rounded-xl shadow-lg shadow-primary/20 transition-all flex justify-center items-center gap-3 text-base active:scale-[0.98]">
-                        <i data-lucide="play" class="w-5 h-5"></i> Iniciar Misión
+                        <i data-lucide="play" class="w-5 h-5"></i> Iniciar Despliegue
                       </button>
                   </div>
 
@@ -245,31 +292,29 @@
                   <div class="absolute inset-0 bg-[linear-gradient(to_right,#80808008_1px,transparent_1px),linear-gradient(to_bottom,#80808008_1px,transparent_1px)] bg-[size:16px_16px] pointer-events-none"></div>
     
                   <!-- Resultado Overlay -->
-                  <div id="result-overlay" class="hidden absolute inset-0 z-30 flex flex-col items-center justify-center bg-neutral-950/95 backdrop-blur-sm rounded-2xl p-6 text-center">
-                    <div class="animate-slide-up">
-                      <div id="result-icon-container" class="w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-5 shadow-lg">
-                         <i id="result-icon" data-lucide="check-circle" class="w-12 h-12"></i>
+                  <div id="result-overlay" class="hidden absolute inset-0 z-30 flex flex-col items-center justify-center bg-neutral-950/95 backdrop-blur-sm rounded-2xl p-6 text-center animate-slide-up">
+                    <div class="max-w-xs">
+                      <div id="result-icon-container" class="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+                        <i id="result-icon" data-lucide="check-circle" class="w-10 h-10"></i>
                       </div>
-                      <h2 id="result-title" class="text-3xl font-black uppercase mb-2">Misión Cumplida</h2>
-                      <p id="result-points" class="font-bold text-2xl mb-3 text-yellow-400">+150 PTS</p>
-                      <p id="result-detail" class="text-neutral-400 mb-6">Has despejado todas las minas</p>
-                      <button id="btn-next-level" class="bg-gradient-to-r from-primary to-accent text-white font-bold uppercase tracking-wider py-3 px-8 rounded-xl shadow-lg shadow-primary/20 transition-all flex items-center gap-2 mx-auto active:scale-95">
+                      <h2 id="result-title" class="text-2xl font-black uppercase mb-1 text-emerald-500">Misión Cumplida</h2>
+                      <p id="result-points" class="font-bold text-xl mb-2 text-yellow-400">+150 PTS</p>
+                      <p id="result-detail" class="text-neutral-400 text-xs mb-5">Has despejado todas las minas terrestres del cuadrante.</p>
+                      <button id="btn-next-level" class="bg-gradient-to-r from-primary to-accent text-white font-bold uppercase tracking-wider py-3 px-6 rounded-xl shadow-lg shadow-primary/20 transition-all flex items-center gap-2 mx-auto text-xs active:scale-95">
                         <i id="btn-next-icon" data-lucide="arrow-right" class="w-4 h-4"></i> <span id="btn-next-text">Siguiente Nivel</span>
                       </button>
                     </div>
                   </div>
     
-                  <!-- Tablero -->
+                  <!-- Tablero Dinámico -->
                   <div class="flex-1 w-full h-full p-2 relative z-20 overflow-auto scrollbar-hide flex items-center justify-center">
-                    <!-- Contenedor del Grid (Se inyecta via JS) -->
                     <div id="mines-grid" class="hidden gap-[4px] bg-neutral-900/70 p-2 rounded-xl border border-neutral-700 shadow-inner w-full max-w-sm aspect-square">
-                        <!-- Generado por JS -->
+                        <!-- Celdas Inyectadas por JS -->
                     </div>
-                    <!-- Standby State -->
                     <div id="mines-standby" class="text-neutral-600/50 text-center flex flex-col items-center gap-4">
-                        <i data-lucide="shield-alert" class="w-16 h-16 mx-auto text-neutral-800"></i>
-                        <p class="text-base font-medium">Listo para iniciar</p>
-                        <p class="text-sm text-neutral-500 max-w-xs">Presiona "Iniciar Misión" para desplegar el campo de minas</p>
+                        <i data-lucide="shield-alert" class="w-14 h-14 mx-auto text-neutral-800"></i>
+                        <p class="text-base font-medium">Radar Táctico Desconectado</p>
+                        <p class="text-xs text-neutral-500 max-w-xs">Presiona "Iniciar Despliegue" para que el radar explore el área.</p>
                      </div>
                   </div>
                 </div>
@@ -280,9 +325,8 @@
                 <h2 class="text-xl font-bold flex items-center gap-3 uppercase tracking-wider border-l-4 border-primary pl-4 text-white">
                   <i data-lucide="history" class="w-5 h-5 text-primary"></i> Registro de Operaciones
                 </h2>
-                <div id="history-container" class="space-y-3">
-                    <!-- Insertado por JS -->
-                    <div class="text-center text-neutral-500 py-10">No hay operaciones recientes.</div>
+                <div id="history-container" class="space-y-3 w-full animate-slide-up">
+                    <div class="text-center text-neutral-500 py-10">Sin registros activos.</div>
                 </div>
             </div>
 
@@ -290,10 +334,10 @@
             <div id="tab-ranking" class="tab-content hidden space-y-5 w-full max-w-md mx-auto pb-6">
                 <div class="bg-gradient-to-b from-red-950/40 to-neutral-950 border border-primary/20 rounded-2xl p-6 shadow-xl flex flex-col items-center text-center relative overflow-hidden">
                   <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-primary/10 via-transparent to-transparent pointer-events-none"></div>
-                  <i data-lucide="trophy" class="w-16 h-16 text-yellow-500 mb-3 drop-shadow-[0_0_25px_rgba(234,179,8,0.4)]"></i>
-                  <p class="text-sm font-bold text-primary uppercase tracking-wider">Pozo de Premios</p>
-                  <h2 class="text-4xl font-black text-white mb-2">1.250.000 PTS</h2>
-                  <p class="text-neutral-400 text-sm">Torneo Semanal - Faltan 2 días</p>
+                  <i data-lucide="trophy" class="w-14 h-14 text-yellow-500 mb-3 drop-shadow-[0_0_25px_rgba(234,179,8,0.4)]"></i>
+                  <p class="text-xs font-bold text-primary uppercase tracking-wider">Top Global de Agentes</p>
+                  <h2 class="text-3xl font-black text-white mb-2">Salón de Honor</h2>
+                  <p class="text-neutral-400 text-[11px] uppercase tracking-widest">Puntajes en tiempo real</p>
                 </div>
 
                 <div class="bg-neutral-900/60 border border-neutral-800 rounded-xl p-4 shadow-sm">
@@ -301,68 +345,69 @@
                         <span class="text-neutral-400 font-bold uppercase text-xs tracking-wider">Agente</span>
                         <span class="text-neutral-400 font-bold uppercase text-xs tracking-wider">Puntuación</span>
                     </div>
-                    <!-- Ranking Ficticio -->
-                    <div class="space-y-3">
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-3">
-                                <span class="font-black text-yellow-500 w-4">1</span>
-                                <span class="font-medium text-white">Ghost_Sniper</span>
-                            </div>
-                            <span class="font-bold text-primary">145,200</span>
-                        </div>
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-3">
-                                <span class="font-black text-neutral-300 w-4">2</span>
-                                <span class="font-medium text-white">Alpha_Wolf</span>
-                            </div>
-                            <span class="font-bold text-primary">120,500</span>
-                        </div>
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-3">
-                                <span class="font-black text-amber-600 w-4">3</span>
-                                <span class="font-medium text-white">Bravo_Six</span>
-                            </div>
-                            <span class="font-bold text-primary">98,300</span>
-                        </div>
+                    <div id="ranking-container" class="space-y-3">
+                        <div class="text-center text-neutral-500 py-4">Buscando radar de agentes...</div>
                     </div>
                 </div>
             </div>
         </main>
     </div>
 
-    <!-- Scripts de Lógica del Juego -->
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // Inicializar iconos de Lucide
-            lucide.createIcons();
+    <!-- Script Unificado y Modular para Garantizar Sincronía y Correcta Ejecución de Firebase -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, query, onSnapshot, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-            // ---- ESTADO GLOBAL DEL JUEGO ----
-            const gameState = {
-                username: '',
-                totalPoints: 0,
-                level: 1,
-                gridSize: 5, // 5x5 inicial
-                totalMines: 3,
-                minesLeft: 3,
-                currentReward: 0,
-                mode: 'dig', // 'dig' o 'flag'
-                isPlaying: false,
-                board: [],
-                history: []
-            };
+        // ---- CONFIGURACIÓN E INICIALIZACIÓN DE FIREBASE (Garantizado al Cargar el Módulo) ----
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'danger-mines-pro';
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
 
-        // ---- ELEMENTOS DEL DOM ----
+        // ---- ESTADO GLOBAL DEL JUEGO ----
+        const gameState = {
+            username: '',
+            totalPoints: 0,
+            level: 1,
+            gridSize: 5,
+            totalMines: 3,
+            minesLeft: 3,
+            currentReward: 0,
+            mode: 'dig',
+            isPlaying: false,
+            board: [],
+            isMuted: false,
+            history: []
+        };
+
+        let authMode = 'login'; // 'login' o 'register'
+        let currentUser = null;
+
+        // ---- CAPTURA DE ELEMENTOS DEL DOM ----
         const screens = {
             loading: document.getElementById('loading-screen'),
             auth: document.getElementById('auth-screen'),
             app: document.getElementById('app-screen')
         };
+
         const authForm = document.getElementById('auth-form');
         const authUsername = document.getElementById('auth-username');
+        const authPassword = document.getElementById('auth-password');
+        const authBtnText = document.getElementById('auth-btn-text');
         const headerUsername = document.getElementById('header-username');
         const headerBalance = document.getElementById('header-balance');
         
-        // Controles de juego
+        const tabModeLogin = document.getElementById('tab-mode-login');
+        const tabModeRegister = document.getElementById('tab-mode-register');
+
+        const settingsModal = document.getElementById('settings-modal');
+        const btnSettings = document.getElementById('btn-settings');
+        const btnCloseSettings = document.getElementById('btn-close-settings');
+        const settingsForm = document.getElementById('settings-form');
+        const btnResetProgress = document.getElementById('btn-reset-progress');
+        
         const btnStart = document.getElementById('btn-start-game');
         const btnAbort = document.getElementById('btn-abort');
         const controlsIdle = document.getElementById('game-controls-idle');
@@ -370,14 +415,12 @@
         const btnModeDig = document.getElementById('btn-mode-dig');
         const btnModeFlag = document.getElementById('btn-mode-flag');
         
-        // Tablero y HUD
         const minesGrid = document.getElementById('mines-grid');
         const minesStandby = document.getElementById('mines-standby');
         const gameLevelText = document.getElementById('game-level');
         const minesCountText = document.getElementById('mines-count');
         const currentPointsText = document.getElementById('current-points');
         
-        // Overlay de Resultado
         const resultOverlay = document.getElementById('result-overlay');
         const resultIconContainer = document.getElementById('result-icon-container');
         const resultIcon = document.getElementById('result-icon');
@@ -388,109 +431,320 @@
         const btnNextText = document.getElementById('btn-next-text');
         const btnNextIcon = document.getElementById('btn-next-icon');
 
-        // ---- INICIALIZACIÓN Y FLUJO DE PANTALLAS ----
-        window.addEventListener('load', () => {
-            // Simular tiempo de carga
-            setTimeout(() => {
-                screens.loading?.classList.add('hidden');
-                screens.auth?.classList.remove('hidden');
-                screens.auth?.classList.add('flex');
-            }, 2000);
+        // ---- SINTETIZADOR DE AUDIO PROCEDIMENTAL ----
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSound(type) {
+            if (gameState.isMuted) return;
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                if (type === 'click') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(200, audioCtx.currentTime + 0.08);
+                    gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+                    gain.gain.linearRampToValueAtTime(0.001, audioCtx.currentTime + 0.08);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.08);
+                } else if (type === 'flag') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(250, audioCtx.currentTime);
+                    osc.frequency.setValueAtTime(400, audioCtx.currentTime + 0.06);
+                    gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+                    gain.gain.linearRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.15);
+                } else if (type === 'win') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(500, audioCtx.currentTime);
+                    osc.frequency.setValueAtTime(750, audioCtx.currentTime + 0.08);
+                    osc.frequency.setValueAtTime(1000, audioCtx.currentTime + 0.16);
+                    gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                    gain.gain.linearRampToValueAtTime(0.001, audioCtx.currentTime + 0.35);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.35);
+                } else if (type === 'explosion') {
+                    const bufferSize = audioCtx.sampleRate * 0.45;
+                    const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+                    const data = buffer.getChannelData(0);
+                    for (let i = 0; i < bufferSize; i++) {
+                        data[i] = Math.random() * 2 - 1;
+                    }
+                    const noise = audioCtx.createBufferSource();
+                    noise.buffer = buffer;
+
+                    const filter = audioCtx.createBiquadFilter();
+                    filter.type = 'lowpass';
+                    filter.frequency.setValueAtTime(800, audioCtx.currentTime);
+                    filter.frequency.exponentialRampToValueAtTime(5, audioCtx.currentTime + 0.45);
+
+                    const noiseGain = audioCtx.createGain();
+                    noiseGain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+                    noiseGain.gain.linearRampToValueAtTime(0.001, audioCtx.currentTime + 0.45);
+
+                    noise.connect(filter);
+                    filter.connect(noiseGain);
+                    noiseGain.connect(audioCtx.destination);
+
+                    noise.start();
+                    noise.stop(audioCtx.currentTime + 0.45);
+                }
+            } catch (e) {
+                console.warn("AudioContext bloqueado temporalmente por navegador.");
+            }
+        }
+
+        // ---- AUTENTICACIÓN INICIAL SECUENCIAL (Regla 3) ----
+        const initAuth = async () => {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    const customCred = await signInWithCustomToken(auth, __initial_auth_token);
+                    currentUser = customCred.user;
+                } else {
+                    const anonCred = await signInAnonymously(auth);
+                    currentUser = anonCred.user;
+                }
+                console.log("Enlace anónimo establecido correctamente:", currentUser.uid);
+                
+                // Mostrar pantalla de acceso táctica una vez autenticado
+                screens.loading.classList.add('hidden');
+                screens.auth.classList.remove('hidden');
+                screens.auth.classList.add('flex');
+            } catch (error) {
+                console.error("Fallo de inicialización táctica:", error);
+                showNotification("Error de red militar", "shield-alert");
+                screens.loading.classList.add('hidden');
+                screens.auth.classList.remove('hidden');
+                screens.auth.classList.add('flex');
+            }
+        };
+
+        // Escuchar cambios de estado de autenticación (Regla 3)
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+            }
         });
 
-        authForm?.addEventListener('submit', (e) => {
+        // ---- ALTERNAR MODOS DE INGRESO ----
+        tabModeLogin.addEventListener('click', () => {
+            playSound('click');
+            authMode = 'login';
+            tabModeLogin.className = "flex-1 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all bg-primary text-white shadow";
+            tabModeRegister.className = "flex-1 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all text-neutral-400 hover:text-white";
+            authBtnText.textContent = "Iniciar Operación";
+        });
+
+        tabModeRegister.addEventListener('click', () => {
+            playSound('click');
+            authMode = 'register';
+            tabModeRegister.className = "flex-1 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all bg-primary text-white shadow";
+            tabModeLogin.className = "flex-1 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all text-neutral-400 hover:text-white";
+            authBtnText.textContent = "Registrar Nuevo Agente";
+        });
+
+        // ---- INICIAR SESIÓN O REGISTRARSE (Firestore Reglas 1 y 2) ----
+        authForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const username = authUsername.value.trim();
-            if (username) {
-                gameState.username = username;
-                headerUsername.textContent = username;
-                
+            const cleanName = authUsername.value.trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
+            const displayUserName = authUsername.value.trim();
+            const passwordValue = authPassword.value.trim();
+
+            if (!cleanName || !passwordValue) {
+                showNotification("Identificador no válido", "shield-alert");
+                return;
+            }
+
+            playSound('click');
+            showNotification("Conectando con el servidor seguro...", "loader");
+
+            try {
+                // Verificar que la autenticación anónima esté lista
+                if (!currentUser) {
+                    const anonCred = await signInAnonymously(auth);
+                    currentUser = anonCred.user;
+                }
+
+                // Ruta pública estricta para persistir agentes de forma segura (Regla 1)
+                const agentDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'agents', cleanName);
+                const agentDocSnap = await getDoc(agentDocRef);
+
+                if (authMode === 'register') {
+                    if (agentDocSnap.exists()) {
+                        showNotification("Este identificador ya está en uso", "shield-alert");
+                        return;
+                    }
+
+                    // Guardar agente nuevo de forma optimizada
+                    const newAgentData = {
+                        username: cleanName,
+                        displayName: displayUserName,
+                        password: passwordValue,
+                        totalPoints: 0,
+                        level: 1,
+                        history: [],
+                        createdAt: new Date().toISOString()
+                    };
+
+                    await setDoc(agentDocRef, newAgentData);
+
+                    gameState.username = cleanName;
+                    gameState.totalPoints = 0;
+                    gameState.level = 1;
+                    gameState.history = [];
+                    
+                    showNotification("Agente registrado exitosamente", "shield-check");
+                } else {
+                    // Iniciar Sesión de forma segura
+                    if (!agentDocSnap.exists()) {
+                        showNotification("El agente no está registrado", "shield-alert");
+                        return;
+                    }
+
+                    const data = agentDocSnap.data();
+                    if (data.password !== passwordValue) {
+                        showNotification("Código de seguridad incorrecto", "shield-alert");
+                        return;
+                    }
+
+                    gameState.username = cleanName;
+                    gameState.totalPoints = data.totalPoints || 0;
+                    gameState.level = data.level || 1;
+                    gameState.history = data.history || [];
+                }
+
+                // Sincronizar UI del Header
+                headerUsername.textContent = displayUserName;
+                headerBalance.textContent = `${gameState.totalPoints} PTS`;
+
+                // Iniciar suscripción de rankings y renderizado de datos
+                listenToRanking();
+                renderHistory();
+
+                // Cambiar pantallas
                 screens.auth.classList.add('hidden');
                 screens.auth.classList.remove('flex');
                 screens.app.classList.remove('hidden');
                 screens.app.classList.add('flex');
-                
-                showNotification(`Bienvenido Agente ${username}`, 'shield-check');
+
+                showNotification(`Línea segura establecida con: ${displayUserName}`, "shield");
+
+            } catch (error) {
+                console.error("Error en Operación Auth:", error);
+                showNotification("Fallo de red al conectar", "shield-alert");
             }
         });
 
-        // Alternar contraseña (visual)
-        document.getElementById('toggle-password')?.addEventListener('click', function() {
-            const pwdInput = document.getElementById('auth-password');
-            const icon = this.querySelector('i');
-            if (pwdInput.type === 'password') {
-                pwdInput.type = 'text';
-                icon.setAttribute('data-lucide', 'eye-off');
-            } else {
-                pwdInput.type = 'password';
-                icon.setAttribute('data-lucide', 'eye');
-            }
-            lucide.createIcons();
-        });
-
-        // Cerrar sesión
-        document.getElementById('btn-logout')?.addEventListener('click', () => {
-            screens.app.classList.add('hidden');
-            screens.app.classList.remove('flex');
-            screens.auth.classList.remove('hidden');
-            screens.auth.classList.add('flex');
-            authForm.reset();
-        });
-
-        // ---- SISTEMA DE PESTAÑAS ----
-        const tabBtns = document.querySelectorAll('.tab-btn');
-        const tabContents = document.querySelectorAll('.tab-content');
-
-        tabBtns.forEach(btn => {
-            btn.addEventListener('click', () => {
-                const targetId = `tab-${btn.getAttribute('data-tab')}`;
-                
-                // Actualizar estilos de botones
-                tabBtns.forEach(b => {
-                    b.classList.remove('bg-gradient-to-r', 'from-primary', 'to-accent', 'text-white', 'shadow-md');
-                    b.classList.add('text-neutral-400');
-                });
-                btn.classList.add('bg-gradient-to-r', 'from-primary', 'to-accent', 'text-white', 'shadow-md');
-                btn.classList.remove('text-neutral-400');
-
-                // Mostrar contenido correspondiente
-                tabContents.forEach(content => {
-                    if (content.id === targetId) {
-                        content.classList.remove('hidden');
-                        content.classList.add('flex');
-                    } else {
-                        content.classList.add('hidden');
-                        content.classList.remove('flex');
+        // ---- RANKING EN VIVO (Regla 2: Sin queries complejos de Firebase) ----
+        function listenToRanking() {
+            const agentsCollectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'agents');
+            
+            onSnapshot(agentsCollectionRef, (snapshot) => {
+                const playersList = [];
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    if (data.displayName && data.totalPoints !== undefined) {
+                        playersList.push(data);
                     }
                 });
+
+                // Ordenación pura en memoria local para cumplir con la Regla 2
+                playersList.sort((a, b) => b.totalPoints - a.totalPoints);
+                renderRanking(playersList.slice(0, 10)); // Top 10
+            }, (error) => {
+                console.error("Fallo obteniendo ranking militar:", error);
             });
-        });
+        }
 
-        // ---- LÓGICA DEL JUEGO (MOTOR DE BUSCAMINAS) ----
+        function renderRanking(players) {
+            const container = document.getElementById('ranking-container');
+            if (!container) return;
 
+            if (players.length === 0) {
+                container.innerHTML = `<div class="text-center text-neutral-500 py-4">Sin datos de ranking.</div>`;
+                return;
+            }
+
+            container.innerHTML = '';
+            players.forEach((player, index) => {
+                const row = document.createElement('div');
+                row.className = "flex items-center justify-between py-2.5 border-b border-neutral-800 last:border-0";
+                
+                let positionBadge = `<span class="font-bold text-neutral-500 w-6">${index + 1}</span>`;
+                if (index === 0) positionBadge = `<span class="w-6">🥇</span>`;
+                if (index === 1) positionBadge = `<span class="w-6">🥈</span>`;
+                if (index === 2) positionBadge = `<span class="w-6">🥉</span>`;
+
+                const focusStyle = player.username === gameState.username ? 'text-primary font-bold animate-pulse' : 'text-neutral-300';
+
+                row.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        ${positionBadge}
+                        <span class="text-sm ${focusStyle}">${player.displayName}</span>
+                    </div>
+                    <span class="font-mono text-sm font-bold text-primary">${player.totalPoints.toLocaleString()}</span>
+                `;
+                container.appendChild(row);
+            });
+        }
+
+        // ---- RENDERIZADO OPTIMIZADO DEL HISTORIAL ----
+        function renderHistory() {
+            const container = document.getElementById('history-container');
+            if (!container) return;
+
+            if (!gameState.history || gameState.history.length === 0) {
+                container.innerHTML = `<div class="text-center text-neutral-500 py-10">Sin operaciones previas en los registros.</div>`;
+                return;
+            }
+
+            container.innerHTML = '';
+            // Copiar y ordenar para mostrar siempre lo más reciente
+            const sortedHistory = [...gameState.history].reverse();
+
+            sortedHistory.forEach(item => {
+                const card = document.createElement('div');
+                card.className = "bg-neutral-900/60 border border-neutral-800 rounded-xl p-4 shadow-sm flex justify-between items-center";
+                const isCompleted = item.status === 'Completado';
+                const statusText = isCompleted ? 'Completado' : 'Mina Detonada';
+                const statusColor = isCompleted ? 'text-emerald-500' : 'text-red-500';
+
+                card.innerHTML = `
+                    <div>
+                        <span class="font-bold text-white text-sm">Nivel ${item.level}</span>
+                        <p class="text-xs text-neutral-500 mt-1">${item.date} • <span class="${statusColor}">${statusText}</span></p>
+                    </div>
+                    <span class="font-bold text-yellow-500 font-mono text-sm">+${item.reward} PTS</span>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // ---- MOTOR DE JUEGO (DANGER MINES) ----
         function startMission() {
+            playSound('click');
             gameState.isPlaying = true;
             gameState.mode = 'dig';
             
-            // Dificultad por nivel
-            gameState.gridSize = Math.min(5 + Math.floor(gameState.level / 3), 8); // Crece hasta 8x8
+            // Configuración del radar por nivel
+            gameState.gridSize = Math.min(5 + Math.floor(gameState.level / 3), 8); 
             gameState.totalMines = 2 + gameState.level; 
             gameState.minesLeft = gameState.totalMines;
             gameState.currentReward = 0;
             
             updateHUD();
             
-            // Cambiar UI de controles
             controlsIdle.classList.add('hidden');
             controlsPlaying.classList.remove('hidden');
             controlsPlaying.classList.add('flex');
             updateModeButtons();
             
-            // Limpiar y preparar tablero
             minesStandby.classList.add('hidden');
             minesGrid.classList.remove('hidden');
             minesGrid.classList.add('grid');
-            
             resultOverlay.classList.add('hidden');
             
             generateBoard();
@@ -506,7 +760,6 @@
                 neighborMines: 0
             })));
 
-            // Colocar minas aleatoriamente
             let minesPlaced = 0;
             while (minesPlaced < gameState.totalMines) {
                 const x = Math.floor(Math.random() * size);
@@ -517,7 +770,6 @@
                 }
             }
 
-            // Calcular números de adyacencia
             for (let y = 0; y < size; y++) {
                 for (let x = 0; x < size; x++) {
                     if (!gameState.board[y][x].isMine) {
@@ -540,36 +792,34 @@
         function renderBoard() {
             minesGrid.innerHTML = '';
             const size = gameState.gridSize;
-            
-            // Configurar grid-template-columns dinámicamente
             minesGrid.style.gridTemplateColumns = `repeat(${size}, minmax(0, 1fr))`;
 
             for (let y = 0; y < size; y++) {
                 for (let x = 0; x < size; x++) {
                     const cellData = gameState.board[y][x];
-                    const cellElement = document.createElement('div');
-                    cellElement.classList.add('cell', 'rounded-lg');
-                    cellElement.dataset.x = x;
-                    cellElement.dataset.y = y;
+                    const cell = document.createElement('div');
+                    cell.className = 'cell rounded-lg';
+                    cell.dataset.x = x;
+                    cell.dataset.y = y;
 
                     if (cellData.isRevealed) {
-                        cellElement.classList.add('revealed-cell');
+                        cell.classList.add('revealed-cell');
                         if (cellData.isMine) {
-                            cellElement.classList.add('mine-hit');
-                            cellElement.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white"><circle cx="11" cy="13" r="9"/><path d="M14.3 8.7l3.4-3.4"/><path d="M16 6a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/></svg>`;
+                            cell.classList.add('mine-hit');
+                            cell.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-white"><circle cx="11" cy="13" r="9"/><path d="M14.3 8.7l3.4-3.4"/><path d="M16 6a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/></svg>`;
                         } else if (cellData.neighborMines > 0) {
-                            cellElement.textContent = cellData.neighborMines;
-                            cellElement.classList.add(`c-${cellData.neighborMines}`);
+                            cell.textContent = cellData.neighborMines;
+                            cell.classList.add(`c-${cellData.neighborMines}`);
                         }
                     } else {
-                        cellElement.classList.add('hidden-cell');
+                        cell.classList.add('hidden-cell');
                         if (cellData.isFlagged) {
-                            cellElement.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-yellow-500"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" x2="4" y1="22" y2="15"/></svg>`;
+                            cell.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-yellow-500"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" x2="4" y1="22" y2="15"/></svg>`;
                         }
                     }
 
-                    cellElement.addEventListener('click', () => handleCellClick(x, y));
-                    minesGrid.appendChild(cellElement);
+                    cell.addEventListener('click', () => handleCellClick(x, y));
+                    minesGrid.appendChild(cell);
                 }
             }
         }
@@ -577,30 +827,26 @@
         function handleCellClick(x, y) {
             if (!gameState.isPlaying) return;
             const cellData = gameState.board[y][x];
-            
             if (cellData.isRevealed) return;
 
             if (gameState.mode === 'flag') {
+                playSound('flag');
                 cellData.isFlagged = !cellData.isFlagged;
                 gameState.minesLeft += cellData.isFlagged ? -1 : 1;
                 updateHUD();
                 renderBoard();
-                checkWin();
                 return;
             }
 
-            // Modo Dig
-            if (cellData.isFlagged) return; // No cavar si hay bandera
+            if (cellData.isFlagged) return;
 
             if (cellData.isMine) {
-                gameOver(false, x, y);
+                playSound('explosion');
+                endGame(false);
             } else {
+                playSound('click');
                 revealCell(x, y);
-                
-                // Sumar puntos por descubrir
-                const puntosGanados = gameState.level * 10;
-                gameState.currentReward += puntosGanados;
-                
+                gameState.currentReward += (gameState.level * 10);
                 updateHUD();
                 renderBoard();
                 checkWin();
@@ -616,7 +862,6 @@
 
             cell.isRevealed = true;
 
-            // Expansión (Flood Fill) si no hay minas adyacentes
             if (cell.neighborMines === 0) {
                 for (let dy = -1; dy <= 1; dy++) {
                     for (let dx = -1; dx <= 1; dx++) {
@@ -629,27 +874,26 @@
         }
 
         function checkWin() {
-            let safeCellsRemaining = 0;
+            let unrevealedSafeCells = 0;
             const size = gameState.gridSize;
-
             for (let y = 0; y < size; y++) {
                 for (let x = 0; x < size; x++) {
                     const cell = gameState.board[y][x];
                     if (!cell.isMine && !cell.isRevealed) {
-                        safeCellsRemaining++;
+                        unrevealedSafeCells++;
                     }
                 }
             }
-
-            if (safeCellsRemaining === 0) {
-                gameOver(true);
+            if (unrevealedSafeCells === 0) {
+                playSound('win');
+                endGame(true);
             }
         }
 
-        function gameOver(isWin, deathX = -1, deathY = -1) {
+        async function endGame(isWin) {
             gameState.isPlaying = false;
             
-            // Revelar todas las minas
+            // Mostrar todas las minas terrestres
             const size = gameState.gridSize;
             for (let y = 0; y < size; y++) {
                 for (let x = 0; x < size; x++) {
@@ -660,69 +904,85 @@
             }
             renderBoard();
 
-            // Configurar Overlay
-            resultOverlay.classList.remove('hidden');
-            resultOverlay.classList.add('flex');
-            
-            // Remover clases previas del contenedor del icono
-            resultIconContainer.className = 'w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-5 shadow-lg';
-
-            if (isWin) {
-                const bonus = gameState.level * 50;
-                const totalRecompensa = gameState.currentReward + bonus;
-                gameState.totalPoints += totalRecompensa;
-                
-                resultIcon.setAttribute('data-lucide', 'check-circle');
-                resultIconContainer.classList.add('bg-emerald-500/20', 'text-emerald-500');
-                resultTitle.textContent = 'Misión Cumplida';
-                resultTitle.className = 'text-3xl font-black uppercase mb-2 text-emerald-500';
-                resultPoints.textContent = `+${totalRecompensa} PTS`;
-                resultPoints.className = 'font-bold text-2xl mb-3 text-yellow-400';
-                resultDetail.textContent = 'Campo de minas asegurado exitosamente.';
-                
-                btnNextText.textContent = 'Siguiente Nivel';
-                btnNextIcon.setAttribute('data-lucide', 'arrow-right');
-                
-                addToHistory(true, totalRecompensa);
-                
-                // Preparar para siguiente nivel
-                gameState.level++;
-                
-            } else {
-                // Efecto de sacudida
-                document.getElementById('capture-zone').classList.add('animate-shake');
-                setTimeout(() => document.getElementById('capture-zone').classList.remove('animate-shake'), 500);
-
-                resultIcon.setAttribute('data-lucide', 'skull');
-                resultIconContainer.classList.add('bg-red-500/20', 'text-red-500');
-                resultTitle.textContent = 'Operador Caído';
-                resultTitle.className = 'text-3xl font-black uppercase mb-2 text-red-500';
-                resultPoints.textContent = '0 PTS';
-                resultPoints.className = 'font-bold text-2xl mb-3 text-neutral-500';
-                resultDetail.textContent = 'Has activado un explosivo. Misión fracasada.';
-                
-                btnNextText.textContent = 'Reintentar Nivel';
-                btnNextIcon.setAttribute('data-lucide', 'rotate-ccw');
-                
-                addToHistory(false, 0);
-            }
-            
-            lucide.createIcons();
-            
-            // Restablecer controles
             controlsPlaying.classList.add('hidden');
             controlsPlaying.classList.remove('flex');
             controlsIdle.classList.remove('hidden');
-            
+
+            resultOverlay.classList.remove('hidden');
+            resultOverlay.classList.add('flex');
+            resultIconContainer.className = 'w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg';
+
+            let sessionReward = 0;
+
+            if (isWin) {
+                const bonus = gameState.level * 50;
+                sessionReward = gameState.currentReward + bonus;
+                gameState.totalPoints += sessionReward;
+
+                resultIcon.setAttribute('data-lucide', 'check-circle');
+                resultIconContainer.classList.add('bg-emerald-500/20', 'text-emerald-500');
+                resultTitle.textContent = "Misión Cumplida";
+                resultTitle.className = "text-2xl font-black uppercase mb-1 text-emerald-500";
+                resultPoints.textContent = `+${sessionReward} PTS`;
+                resultPoints.className = "font-bold text-xl mb-2 text-yellow-400";
+                resultDetail.textContent = "Sector completamente libre de amenazas tácticas.";
+                btnNextText.textContent = "Siguiente Nivel";
+                btnNextIcon.setAttribute('data-lucide', 'arrow-right');
+
+                gameState.level++;
+            } else {
+                document.getElementById('capture-zone').classList.add('animate-shake');
+                setTimeout(() => document.getElementById('capture-zone').classList.remove('animate-shake'), 400);
+
+                resultIcon.setAttribute('data-lucide', 'skull');
+                resultIconContainer.classList.add('bg-red-500/20', 'text-red-500');
+                resultTitle.textContent = "Agente Caído";
+                resultTitle.className = "text-2xl font-black uppercase mb-1 text-red-500";
+                resultPoints.textContent = "0 PTS";
+                resultPoints.className = "font-bold text-xl mb-2 text-neutral-500";
+                resultDetail.textContent = "Se activó un explosivo. Misión abortada de emergencia.";
+                btnNextText.textContent = "Reintentar Despliegue";
+                btnNextIcon.setAttribute('data-lucide', 'rotate-ccw');
+            }
+
+            lucide.createIcons();
             updateHUD();
+
+            // Agregar entrada de historial optimizada localmente
+            const currentEntry = {
+                level: isWin ? gameState.level - 1 : gameState.level,
+                status: isWin ? 'Completado' : 'Fallido',
+                reward: sessionReward,
+                date: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                timestamp: new Date().toISOString()
+            };
+
+            gameState.history.push(currentEntry);
+            if (gameState.history.length > 15) {
+                gameState.history.shift();
+            }
+
+            renderHistory();
+
+            // Sincronizar estado completo del perfil con Firestore (Ruta pública estricta - Regla 1)
+            if (gameState.username) {
+                try {
+                    const agentDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'agents', gameState.username);
+                    await setDoc(agentDocRef, {
+                        totalPoints: gameState.totalPoints,
+                        level: gameState.level,
+                        history: gameState.history
+                    }, { merge: true });
+                } catch (err) {
+                    console.error("Error al sincronizar datos:", err);
+                }
+            }
         }
 
         function abortMission() {
-            if(!confirm('¿Estás seguro de abortar? Perderás el progreso de este nivel.')) return;
-            gameOver(false); // Tratado como derrota
+            if (!confirm("¿Deseas abortar la misión táctica actual?")) return;
+            endGame(false);
         }
-
-        // ---- UTILIDADES Y UI ----
 
         function updateHUD() {
             gameLevelText.textContent = `Nivel ${gameState.level}`;
@@ -741,98 +1001,177 @@
             }
         }
 
-        function addToHistory(isWin, points) {
-            const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-            gameState.history.unshift({
-                level: gameState.level,
-                isWin: isWin,
-                points: points,
-                time: time
-            });
-            
-            renderHistory();
-        }
-
-        function renderHistory() {
-            const container = document.getElementById('history-container');
-            if (gameState.history.length === 0) return;
-            
-            container.innerHTML = '';
-            gameState.history.forEach(entry => {
-                const div = document.createElement('div');
-                div.className = 'bg-neutral-900/60 border border-neutral-800 rounded-xl p-4 shadow-sm hover:bg-neutral-900/80 transition-colors animate-slide-up';
-                
-                const statusColor = entry.isWin ? 'text-emerald-500' : 'text-red-500';
-                const statusText = entry.isWin ? 'Completado' : 'Mina activada';
-                const ptsText = entry.isWin ? `+${entry.points} PTS` : '0 PTS';
-
-                div.innerHTML = `
-                    <div class="flex justify-between items-center">
-                        <span class="font-medium">Nivel ${entry.level}</span>
-                        <span class="font-bold ${statusColor}">${ptsText}</span>
-                    </div>
-                    <p class="text-sm text-neutral-400 mt-1">${entry.time} • ${statusText}</p>
-                `;
-                container.appendChild(div);
-            });
-        }
-
         function showNotification(text, iconName = 'info') {
             const notif = document.getElementById('notification');
-            document.getElementById('notification-text').textContent = text;
-            document.getElementById('notification-icon').setAttribute('data-lucide', iconName);
+            const notifText = document.getElementById('notification-text');
+            const notifIcon = document.getElementById('notification-icon');
+            
+            if (!notif || !notifText || !notifIcon) return;
+
+            notifText.textContent = text;
+            notifIcon.setAttribute('data-lucide', iconName);
             lucide.createIcons();
             
             notif.classList.remove('hidden');
-            
-            setTimeout(() => {
-                notif.classList.add('hidden');
-            }, 3000);
+            setTimeout(() => notif.classList.add('hidden'), 3000);
         }
 
-        // ---- LISTENERS DE BOTONES DEL JUEGO ----
-        btnStart?.addEventListener('click', startMission);
-        btnNextLevel?.addEventListener('click', startMission);
-        btnAbort?.addEventListener('click', abortMission);
-        
-        btnModeDig?.addEventListener('click', () => {
+        // ---- MODAL DE AJUSTES (ACTUALIZACIONES DE PERFIL) ----
+        btnSettings.addEventListener('click', () => {
+            playSound('click');
+            settingsModal.classList.remove('hidden');
+        });
+
+        btnCloseSettings.addEventListener('click', () => {
+            playSound('click');
+            settingsModal.classList.add('hidden');
+        });
+
+        // Actualizar contraseña del Agente
+        settingsForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const oldPass = document.getElementById('settings-old-password').value;
+            const newPass = document.getElementById('settings-new-password').value;
+
+            if (!gameState.username) return;
+
+            try {
+                const agentDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'agents', gameState.username);
+                const agentSnap = await getDoc(agentDocRef);
+                const currentData = agentSnap.data();
+
+                if (currentData.password !== oldPass) {
+                    showNotification("Código de acceso incorrecto", "shield-alert");
+                    return;
+                }
+
+                await setDoc(agentDocRef, { password: newPass }, { merge: true });
+                showNotification("Contraseña actualizada", "shield-check");
+                settingsForm.reset();
+                settingsModal.classList.add('hidden');
+
+            } catch (err) {
+                console.error("Error al reconfigurar acceso:", err);
+                showNotification("Error de red militar", "shield-alert");
+            }
+        });
+
+        // Restablecer progreso táctico
+        btnResetProgress.addEventListener('click', async () => {
+            if (!confirm("¿CONFIRMAS RESTABLECER TU PROGRESO? Perderás tus puntos y volverás al Nivel 1.")) return;
+            
+            playSound('explosion');
+            try {
+                const agentDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'agents', gameState.username);
+                await setDoc(agentDocRef, {
+                    totalPoints: 0,
+                    level: 1,
+                    history: []
+                }, { merge: true });
+
+                gameState.totalPoints = 0;
+                gameState.level = 1;
+                gameState.history = [];
+
+                updateHUD();
+                renderHistory();
+                settingsModal.classList.add('hidden');
+                showNotification("Rango restablecido", "shield");
+
+            } catch (err) {
+                console.error("Fallo al restablecer progreso:", err);
+                showNotification("Error de conexión", "shield-alert");
+            }
+        });
+
+        // ---- LISTENERS DE ACCIÓN ----
+        btnStart.addEventListener('click', startMission);
+        btnNextLevel.addEventListener('click', startMission);
+        btnAbort.addEventListener('click', abortMission);
+
+        btnModeDig.addEventListener('click', () => {
+            playSound('click');
             gameState.mode = 'dig';
             updateModeButtons();
         });
-        
-        btnModeFlag?.addEventListener('click', () => {
+
+        btnModeFlag.addEventListener('click', () => {
+            playSound('click');
             gameState.mode = 'flag';
             updateModeButtons();
         });
 
-        // Botón Mute
-        let isMuted = false;
-        document.getElementById('btn-mute')?.addEventListener('click', function() {
-            isMuted = !isMuted;
+        // Botón Silenciar
+        const btnMute = document.getElementById('btn-mute');
+        btnMute.addEventListener('click', () => {
+            gameState.isMuted = !gameState.isMuted;
             const icon = document.getElementById('mute-icon');
-            if(isMuted) {
+            if (gameState.isMuted) {
                 icon.setAttribute('data-lucide', 'volume-x');
-                this.classList.add('text-primary');
-                this.classList.remove('text-neutral-400');
+                btnMute.classList.add('text-primary');
+                btnMute.classList.remove('text-neutral-400');
             } else {
                 icon.setAttribute('data-lucide', 'volume-2');
-                this.classList.remove('text-primary');
-                this.classList.add('text-neutral-400');
+                btnMute.classList.remove('text-primary');
+                btnMute.classList.add('text-neutral-400');
             }
             lucide.createIcons();
         });
 
-        // Checkbox recordar
-        document.getElementById('toggle-remember')?.addEventListener('click', function() {
-            const box = document.getElementById('remember-box');
-            box?.classList.toggle('bg-primary');
-            box?.classList.toggle('border-primary');
-            box?.classList.toggle('text-white');
-            box?.classList.toggle('text-transparent');
-            box?.classList.toggle('bg-transparent');
+        // Cerrar sesión
+        document.getElementById('btn-logout').addEventListener('click', () => {
+            playSound('click');
+            screens.app.classList.add('hidden');
+            screens.app.classList.remove('flex');
+            screens.auth.classList.remove('hidden');
+            screens.auth.classList.add('flex');
+            authForm.reset();
         });
-        
-        }); // Cierre de DOMContentLoaded
+
+        // Alternar visualizar contraseña
+        document.getElementById('toggle-password').addEventListener('click', function () {
+            const pwdInput = document.getElementById('auth-password');
+            const icon = this.querySelector('i');
+            if (pwdInput.type === 'password') {
+                pwdInput.type = 'text';
+                icon.setAttribute('data-lucide', 'eye-off');
+            } else {
+                pwdInput.type = 'password';
+                icon.setAttribute('data-lucide', 'eye');
+            }
+            lucide.createIcons();
+        });
+
+        // Selector de pestaña inferior
+        const tabBtns = document.querySelectorAll('.tab-btn');
+        const tabContents = document.querySelectorAll('.tab-content');
+
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                playSound('click');
+                const targetTab = btn.getAttribute('data-tab');
+
+                tabBtns.forEach(b => {
+                    b.className = "tab-btn flex-1 py-3 rounded-lg font-bold text-sm uppercase tracking-wider transition-all text-neutral-400 hover:text-white hover:bg-neutral-800/50";
+                });
+                btn.className = "tab-btn flex-1 py-3 rounded-lg font-bold text-sm uppercase tracking-wider transition-all bg-gradient-to-r from-primary to-accent text-white shadow-md";
+
+                tabContents.forEach(content => {
+                    if (content.id === `tab-${targetTab}`) {
+                        content.classList.remove('hidden');
+                        content.classList.add('flex');
+                    } else {
+                        content.classList.add('hidden');
+                        content.classList.remove('flex');
+                    }
+                });
+            });
+        });
+
+        // ---- INICIALIZAR AUTENTICACIÓN AL ARRANCAR ----
+        initAuth();
     </script>
 </body>
 </html>
+
+```
